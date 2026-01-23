@@ -19,7 +19,7 @@ export default function Lobby({ roomCode, players, isHost, onStartGame, error }:
     <div className="centered">
       <div style={{ maxWidth: '600px', width: '100%', padding: '20px' }}>
         <h1 className="pixel-font" style={{ fontSize: '1.25rem', marginBottom: '24px', color: 'var(--gold)' }}>
-          ALL HANDS ON DECK
+          All hands on deck
         </h1>
 
         <div className="card" style={{ marginBottom: '24px', textAlign: 'center' }}>

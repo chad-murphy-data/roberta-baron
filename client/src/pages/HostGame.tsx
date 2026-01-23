@@ -121,7 +121,7 @@ export default function HostGame() {
       }}>
         <div>
           <h1 className="pixel-font" style={{ fontSize: '1rem', color: 'var(--gold)' }}>
-            ALL HANDS ON DECK
+            All hands on deck
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '4px' }}>
             Room: {urlRoomCode}

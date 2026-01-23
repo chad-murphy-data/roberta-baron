@@ -38,12 +38,9 @@ export default function Home() {
     return (
       <div className="centered">
         <div style={{ maxWidth: '600px', padding: '40px 20px' }}>
-          <h1 className="pixel-font" style={{ fontSize: '1.5rem', marginBottom: '16px', color: 'var(--gold)' }}>
-            ALL HANDS ON DECK
+          <h1 className="pixel-font" style={{ fontSize: '1.5rem', marginBottom: '40px', color: 'var(--gold)' }}>
+            All hands on deck
           </h1>
-          <h2 style={{ marginBottom: '40px', color: 'var(--text-muted)' }}>
-            Where in Corporate America is Roberta Baron?
-          </h2>
 
           <div style={{
             background: 'var(--card-bg)',

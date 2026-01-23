@@ -273,9 +273,7 @@ httpServer.listen(PORT, () => {
   console.log(`
   ╔══════════════════════════════════════════════════════════╗
   ║                                                          ║
-  ║   ALL HANDS ON DECK - Game Server                        ║
-  ║   Where in Corporate America is Roberta Baron?           ║
-  ║                                                          ║
+  ║   All hands on deck - Game Server                        ║
   ║   Server running on port ${PORT}                            ║
   ║                                                          ║
   ╚══════════════════════════════════════════════════════════╝
