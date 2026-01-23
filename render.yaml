@@ -18,16 +18,15 @@ services:
   # Frontend React app
   - type: web
     name: all-hands-on-deck-client
-    runtime: static
+    runtime: node
+    plan: pro
     buildCommand: cd client && npm install && npm run build
-    staticPublishPath: client/dist
+    startCommand: cd client && npm start
     envVars:
       - key: VITE_SERVER_URL
         fromService:
           name: all-hands-on-deck-server
           type: web
           envVarKey: RENDER_EXTERNAL_URL
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: no-cache
+      - key: PORT
+        value: 10000
