@@ -6,7 +6,7 @@ services:
   - type: web
     name: all-hands-on-deck-server
     runtime: node
-    plan: starter
+    plan: pro
     buildCommand: cd server && npm install && npm run build
     startCommand: cd server && npm start
     envVars:
