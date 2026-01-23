@@ -7,9 +7,13 @@ import { RoomManager } from './RoomManager.js';
 const app = express();
 const httpServer = createServer(app);
 
-// Configure CORS
+// Configure CORS - allow all origins in production for easy deployment
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? true // Allow all origins in production (you can restrict this later)
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: allowedOrigins,
   credentials: true
 }));
 
@@ -18,7 +22,7 @@ app.use(express.json());
 // Socket.io setup
 const io = new Server(httpServer, {
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true
   }

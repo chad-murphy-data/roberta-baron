@@ -1,0 +1,34 @@
+# Render Blueprint for one-click deployment
+# Deploy at: https://render.com/deploy
+
+services:
+  # Backend WebSocket server
+  - type: web
+    name: all-hands-on-deck-server
+    runtime: node
+    plan: free
+    buildCommand: cd server && npm install && npm run build
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+
+  # Frontend React app
+  - type: web
+    name: all-hands-on-deck-client
+    runtime: static
+    plan: free
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: client/dist
+    envVars:
+      - key: VITE_SERVER_URL
+        fromService:
+          name: all-hands-on-deck-server
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
