@@ -77,7 +77,7 @@ export interface DestinationClue {
 export interface Player {
   id: string;
   name: string;
-  socketId: string;
+  connectionId: string;
   isHost?: boolean;
 }
 
@@ -124,7 +124,7 @@ export interface GameState {
 
 export interface Room {
   roomCode: string;
-  hostSocketId: string;
+  hostConnectionId: string;
   players: Player[];
   gameState: GameState | null;
   votingState: VotingState | null;
@@ -200,3 +200,35 @@ export const LOCATIONS_BY_INDUSTRY: Record<Industry, SearchLocation[]> = {
     { id: 'call-center', name: 'Call Center', description: 'Rows of cubicles, headsets, and hold music' }
   ]
 };
+
+// Message types for PartyKit communication
+export type ClientMessage =
+  | { type: 'join-room'; playerName: string }
+  | { type: 'start-game' }
+  | { type: 'proceed-from-intro' }
+  | { type: 'start-vote'; prompt: string; options: string[]; votingType: VotingState['votingType']; duration?: number }
+  | { type: 'submit-vote'; vote: string }
+  | { type: 'search-location'; locationId: string }
+  | { type: 'travel'; destination: string }
+  | { type: 'submit-to-pilot' }
+  | { type: 'get-state' }
+  | { type: 'get-destinations' }
+  | { type: 'get-news' };
+
+export type ServerMessage =
+  | { type: 'room-joined'; roomCode: string; players: Player[]; isHost: boolean }
+  | { type: 'player-joined'; players: Player[] }
+  | { type: 'player-left'; players: Player[] }
+  | { type: 'game-started'; gameState: Partial<GameState> }
+  | { type: 'game-update'; gameState: Partial<GameState> }
+  | { type: 'vote-started'; prompt: string; options: string[]; votingType: VotingState['votingType']; duration: number }
+  | { type: 'vote-timer'; timeRemaining: number }
+  | { type: 'vote-update'; votesReceived: number; totalPlayers: number }
+  | { type: 'vote-result'; winner: string; allVotes: Record<string, string>; gameState: Partial<GameState> }
+  | { type: 'search-result'; clue: CollectedClue | null; gameState: Partial<GameState> }
+  | { type: 'travel-result'; success: boolean; message: string; timeSpent: number; gameState: Partial<GameState> }
+  | { type: 'pilot-result'; identified: boolean; message: string; possibleMatches?: string[]; gameState: Partial<GameState> }
+  | { type: 'game-state'; gameState: Partial<GameState> | null }
+  | { type: 'destination-options'; options: string[] }
+  | { type: 'news-headline'; headline: string }
+  | { type: 'error'; message: string };

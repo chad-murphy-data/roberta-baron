@@ -43,7 +43,7 @@ interface GameBoardProps {
   isHost: boolean
 }
 
-export default function GameBoard({ gameState, onSearch, onStartVote, isHost }: GameBoardProps) {
+export default function GameBoard({ gameState, onSearch, onStartVote, isHost: _isHost }: GameBoardProps) {
   const [showClues, setShowClues] = useState(false)
 
   const criminalClues = gameState.cluesCollected.filter(c => c.type === 'criminal')

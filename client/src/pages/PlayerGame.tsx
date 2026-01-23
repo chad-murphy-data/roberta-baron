@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useSocket } from '../context/SocketContext'
-import { useGame } from '../context/GameContext'
+import { usePartyKit } from '../context/PartyKitContext'
 import PlayerLobby from '../components/PlayerLobby'
 import PlayerVoting from '../components/PlayerVoting'
 import PlayerClueView from '../components/PlayerClueView'
@@ -9,15 +8,15 @@ import PlayerClueView from '../components/PlayerClueView'
 export default function PlayerGame() {
   const { roomCode: urlRoomCode } = useParams()
   const navigate = useNavigate()
-  const { isConnected } = useSocket()
   const {
+    isConnected,
     roomCode,
     players,
     gameState,
     votingState,
     submitVote,
     error
-  } = useGame()
+  } = usePartyKit()
 
   // Redirect if not in the right room
   useEffect(() => {

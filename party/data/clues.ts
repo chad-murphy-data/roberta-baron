@@ -1,4 +1,4 @@
-import { CriminalClue, Archetype, DestinationClue, Brand } from './types.js';
+import { CriminalClue, Archetype, DestinationClue, Brand } from './types';
 
 // 3-Archetype Clues (create ambiguity)
 export const THREE_ARCHETYPE_CLUES: CriminalClue[] = [
@@ -82,8 +82,8 @@ export const THREE_ARCHETYPE_CLUES: CriminalClue[] = [
   },
   {
     id: 14,
-    textMale: "He mentioned giving a TED talk—or maybe it was TEDx",
-    textFemale: "She mentioned giving a TED talk—or maybe it was TEDx",
+    textMale: "He mentioned giving a TED talk-or maybe it was TEDx",
+    textFemale: "She mentioned giving a TED talk-or maybe it was TEDx",
     archetypes: ['ThoughtLeader', 'Evangelist', 'Consultant']
   },
   {
@@ -480,7 +480,7 @@ function generateEraClueText(era: string): string {
 export const ROBERTA_QUOTES = [
   "My cousins got caught stealing jewels from the Louvre. Jewels! In 2025! Meanwhile, I just took Coca-Cola's 'brand authenticity' and no one even filed a police report.",
   "Why steal diamonds when you can steal 'synergy'? It's worth more and weighs nothing.",
-  "The Crown Jewels are insured. Corporate values? Priceless—and completely unprotected.",
+  "The Crown Jewels are insured. Corporate values? Priceless-and completely unprotected.",
   "My family has been in the theft business for generations. I'm just the first to realize ideas are worth more than objects.",
   "They called me crazy for stealing mission statements. Now every Fortune 500 company is looking for their 'why' and can't find it.",
   "Physical theft is so 20th century. I take what makes a company a company."
@@ -493,7 +493,7 @@ export const NEWS_HEADLINES = [
   "Employees at {company} report 'something feels different' but can't explain",
   "{company} stock tumbles as '{asset}' mysteriously absent from investor call",
   "Industry experts baffled: {company}'s '{asset}' nowhere to be found",
-  "Consultants hired to find {company}'s missing '{asset}'—billed by the hour",
+  "Consultants hired to find {company}'s missing '{asset}'-billed by the hour",
   "'{asset}' declared missing from {company}; authorities have no leads",
   "Intern at {company}: 'The vibes are just... off now'"
 ];

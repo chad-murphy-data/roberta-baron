@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useSocket } from '../context/SocketContext'
-import { useGame } from '../context/GameContext'
+import { usePartyKit } from '../context/PartyKitContext'
 
 export default function Home() {
   const navigate = useNavigate()
-  const { isConnected } = useSocket()
-  const { roomCode, createRoom, joinRoom, error, clearError } = useGame()
+  const { isConnected, roomCode, createRoom, joinRoom, error, clearError } = usePartyKit()
 
   const [mode, setMode] = useState<'home' | 'host' | 'join'>('home')
   const [playerName, setPlayerName] = useState('')

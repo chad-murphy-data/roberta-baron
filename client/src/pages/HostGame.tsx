@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useSocket } from '../context/SocketContext'
-import { useGame } from '../context/GameContext'
+import { usePartyKit } from '../context/PartyKitContext'
 import Lobby from '../components/Lobby'
 import IntroScreen from '../components/IntroScreen'
 import GameBoard from '../components/GameBoard'
@@ -13,8 +12,8 @@ import NewsTicker from '../components/NewsTicker'
 export default function HostGame() {
   const { roomCode: urlRoomCode } = useParams()
   const navigate = useNavigate()
-  const { isConnected } = useSocket()
   const {
+    isConnected,
     roomCode,
     players,
     isHost,
@@ -25,7 +24,7 @@ export default function HostGame() {
     searchLocation,
     startVote,
     error
-  } = useGame()
+  } = usePartyKit()
 
   const [newsHeadline, setNewsHeadline] = useState<string>('')
 

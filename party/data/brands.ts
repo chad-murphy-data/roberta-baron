@@ -1,4 +1,4 @@
-import { Brand } from './types.js';
+import { Brand } from './types';
 
 export const BRANDS: Brand[] = [
   // Pacific Northwest (6 brands)
@@ -211,7 +211,7 @@ export const BRANDS: Brand[] = [
     subIndustry: 'Fast food',
     era: '1950-1980',
     stolenAsset: 'Fourth Meal Energy',
-    uniqueIdentifier: "Doritos Locos Tacos and 'Live Más'",
+    uniqueIdentifier: "Doritos Locos Tacos and 'Live Mas'",
     cityHint: 'in Orange County, California'
   },
   {

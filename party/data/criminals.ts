@@ -1,4 +1,4 @@
-import { Criminal, Archetype } from './types.js';
+import { Criminal, Archetype } from './types';
 
 // Archetype descriptions for flavor text
 export const ARCHETYPE_DESCRIPTIONS: Record<Archetype, string> = {
@@ -11,7 +11,7 @@ export const ARCHETYPE_DESCRIPTIONS: Record<Archetype, string> = {
   Evangelist: "Pivoted to crypto. Says 'decentralized' and 'trustless'. 'Few understand this'. Asks if the cafeteria takes Bitcoin."
 };
 
-// The 14 criminals (7 archetypes × 2 genders)
+// The 14 criminals (7 archetypes x 2 genders)
 export const CRIMINALS: Criminal[] = [
   // The Vest
   {

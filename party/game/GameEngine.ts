@@ -5,10 +5,10 @@ import {
   CollectedClue,
   DestinationClue,
   Archetype,
-  Gender
-} from '../data/types.js';
-import { CRIMINALS, getRandomCriminal } from '../data/criminals.js';
-import { BRANDS, PUBLIC_BRANDS, getBrandById } from '../data/brands.js';
+  LOCATIONS_BY_INDUSTRY
+} from '../data/types';
+import { CRIMINALS, getRandomCriminal } from '../data/criminals';
+import { BRANDS, PUBLIC_BRANDS, getBrandById } from '../data/brands';
 import {
   VALID_CRIMINAL_COMBOS,
   getClueById,
@@ -16,7 +16,7 @@ import {
   ROBERTA_QUOTES,
   NEWS_HEADLINES,
   FIDELITY_NEWS_HEADLINES
-} from '../data/clues.js';
+} from '../data/clues';
 
 export class GameEngine {
   private gameState: GameState;
@@ -407,5 +407,42 @@ Without positive ID, you couldn't make an arrest.
 ${this.gameState.criminal.name} slipped away.
 
 Better luck next time.`;
+  }
+
+  getPublicGameState(): Partial<GameState> {
+    const state = this.getState();
+    const currentCompany = this.getCurrentCompany();
+
+    // Return a sanitized version without revealing the criminal identity
+    return {
+      currentCityIndex: state.currentCityIndex,
+      hoursRemaining: state.hoursRemaining,
+      cluesCollected: state.cluesCollected,
+      criminalIdentified: state.criminalIdentified,
+      criminalName: state.criminalIdentified ? state.criminal.name : null,
+      fidelityMode: state.fidelityMode,
+      customVillain: state.customVillain,
+      gamePhase: state.gamePhase,
+      // Current company info
+      currentCompany: {
+        name: currentCompany.name,
+        city: currentCompany.city,
+        state: currentCompany.state,
+        industry: currentCompany.industry,
+        stolenAsset: currentCompany.stolenAsset
+      },
+      // Locations available to search
+      availableLocations: LOCATIONS_BY_INDUSTRY[currentCompany.industry],
+      searchedLocations: this.getSearchedLocationsThisCity(),
+      // Total cities to visit
+      totalCities: state.companies.length,
+      // Victory/defeat messages
+      victoryMessage: state.gamePhase === 'victory' ? this.getVictoryMessage() : undefined,
+      defeatMessage: state.gamePhase === 'defeat' ? this.getDefeatMessage() : undefined,
+      // Roberta quote for intro
+      robertaQuote: state.gamePhase === 'intro' ? this.getRobertaQuote() : undefined,
+      // Criminal archetype description (only if identified)
+      criminalDescription: state.criminalIdentified ? state.criminal.description : undefined
+    } as Partial<GameState>;
   }
 }
