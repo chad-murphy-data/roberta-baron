@@ -6,7 +6,6 @@ services:
   - type: web
     name: all-hands-on-deck-server
     runtime: node
-    plan: free
     buildCommand: cd server && npm install && npm run build
     startCommand: cd server && npm start
     envVars:
@@ -15,11 +14,9 @@ services:
       - key: PORT
         value: 10000
 
-  # Frontend React app
-  - type: web
+  # Frontend React app (static sites are free on Render)
+  - type: static
     name: all-hands-on-deck-client
-    runtime: static
-    plan: free
     buildCommand: cd client && npm install && npm run build
     staticPublishPath: client/dist
     envVars:
