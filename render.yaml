@@ -15,9 +15,10 @@ services:
       - key: PORT
         value: 10000
 
-  # Frontend React app (static sites are free on Render)
-  - type: static
+  # Frontend React app
+  - type: web
     name: all-hands-on-deck-client
+    runtime: static
     buildCommand: cd client && npm install && npm run build
     staticPublishPath: client/dist
     envVars:
