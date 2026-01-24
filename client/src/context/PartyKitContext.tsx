@@ -133,7 +133,7 @@ export function PartyKitProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const connectToRoom = useCallback((code: string, params: Record<string, string>) => {
+  const connectToRoom = useCallback((code: string, params: Record<string, string>, onConnect?: () => void) => {
     // Close existing socket if any
     if (socketRef.current) {
       socketRef.current.close()
@@ -149,6 +149,10 @@ export function PartyKitProvider({ children }: { children: ReactNode }) {
     newSocket.addEventListener('open', () => {
       console.log('Connected to PartyKit room:', code)
       setIsConnected(true)
+      // Call the onConnect callback if provided (used for joining rooms)
+      if (onConnect) {
+        onConnect()
+      }
     })
 
     newSocket.addEventListener('close', () => {
@@ -264,12 +268,14 @@ export function PartyKitProvider({ children }: { children: ReactNode }) {
   }, [connectToRoom])
 
   const joinRoom = useCallback((code: string, playerName: string) => {
-    connectToRoom(code, {})
-    // Send join message after a short delay to ensure connection is established
-    setTimeout(() => {
-      send({ type: 'join-room', playerName })
-    }, 100)
-  }, [connectToRoom, send])
+    // Connect to room and send join message once connected
+    connectToRoom(code, {}, () => {
+      // This callback runs after the socket is open
+      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+        socketRef.current.send(JSON.stringify({ type: 'join-room', playerName }))
+      }
+    })
+  }, [connectToRoom])
 
   const startGame = useCallback(() => {
     send({ type: 'start-game' })
