@@ -4,7 +4,7 @@ import { usePartyKit } from '../context/PartyKitContext'
 
 export default function Home() {
   const navigate = useNavigate()
-  const { isConnected, roomCode, createRoom, joinRoom, error, clearError } = usePartyKit()
+  const { roomCode, createRoom, joinRoom, error, clearError } = usePartyKit()
 
   const [mode, setMode] = useState<'home' | 'host' | 'join'>('home')
   const [playerName, setPlayerName] = useState('')
@@ -56,29 +56,16 @@ export default function Home() {
             </p>
           </div>
 
-          {!isConnected && (
-            <div style={{
-              background: 'rgba(239, 68, 68, 0.2)',
-              padding: '12px',
-              borderRadius: '8px',
-              marginBottom: '20px'
-            }}>
-              Connecting to server...
-            </div>
-          )}
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <button
               className="btn btn-primary btn-large"
               onClick={() => setMode('host')}
-              disabled={!isConnected}
             >
               Host a Game
             </button>
             <button
               className="btn btn-secondary btn-large"
               onClick={() => setMode('join')}
-              disabled={!isConnected}
             >
               Join a Game
             </button>
