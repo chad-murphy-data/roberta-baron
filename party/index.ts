@@ -370,6 +370,22 @@ export default class GameRoom implements Party.Server {
     const allVotes = { ...this.state.votingState.votes };
     const votingType = this.state.votingState.votingType;
 
+    // If tiebreaker, find a player who voted for the winning option
+    let tiebreakerPlayerName: string | undefined;
+    if (wasTiebreaker) {
+      // Find player IDs who voted for the winner
+      const winningVoterIds = Object.entries(allVotes)
+        .filter(([_, vote]) => vote === winner)
+        .map(([playerId]) => playerId);
+
+      // Pick a random one and find their name
+      if (winningVoterIds.length > 0) {
+        const randomVoterId = winningVoterIds[Math.floor(Math.random() * winningVoterIds.length)];
+        const player = this.state.players.find(p => p.id === randomVoterId);
+        tiebreakerPlayerName = player?.name;
+      }
+    }
+
     // Clear voting state
     this.state.votingState = null;
 
@@ -383,6 +399,7 @@ export default class GameRoom implements Party.Server {
         winner,
         allVotes,
         wasTiebreaker,
+        tiebreakerPlayerName,
         gameState: this.state.gameEngine.getPublicGameState()
       });
 
@@ -403,6 +420,7 @@ export default class GameRoom implements Party.Server {
         winner,
         allVotes,
         wasTiebreaker,
+        tiebreakerPlayerName,
         gameState: this.state.gameEngine.getPublicGameState()
       });
 
@@ -420,6 +438,7 @@ export default class GameRoom implements Party.Server {
         winner,
         allVotes,
         wasTiebreaker,
+        tiebreakerPlayerName,
         gameState: this.state.gameEngine?.getPublicGameState() || {}
       });
     }

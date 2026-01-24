@@ -120,7 +120,7 @@ export default function PlayerGame() {
           <h2 style={{ marginBottom: '16px' }}>Vote Result</h2>
           {votingState.wasTiebreaker && (
             <p style={{ color: 'var(--warning)', marginBottom: '12px', fontWeight: 'bold' }}>
-              It's a tie! Randomly selecting...
+              It's a tie! Going with {votingState.tiebreakerPlayerName || 'a random choice'}...
             </p>
           )}
           <p style={{ color: 'var(--gold)', fontSize: '1.5rem' }}>

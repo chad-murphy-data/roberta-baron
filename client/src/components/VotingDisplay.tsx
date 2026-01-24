@@ -15,6 +15,7 @@ interface VotingState {
   votes: Record<string, string>
   winner?: string
   wasTiebreaker?: boolean
+  tiebreakerPlayerName?: string
 }
 
 interface VotingDisplayProps {
@@ -76,7 +77,7 @@ export default function VotingDisplay({ votingState, players, isHost, onVote }: 
           }}>
             {votingState.wasTiebreaker && (
               <p style={{ color: 'var(--warning)', marginBottom: '12px', fontWeight: 'bold' }}>
-                It's a tie! Randomly selecting...
+                It's a tie! Going with {votingState.tiebreakerPlayerName || 'a random choice'}...
               </p>
             )}
             <p style={{ color: 'var(--text-muted)', marginBottom: '8px' }}>Result:</p>

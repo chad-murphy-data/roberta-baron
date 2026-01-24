@@ -11,7 +11,7 @@ export type ServerMessage =
   | { type: 'vote-started'; prompt: string; options: string[]; votingType: VotingState['votingType']; duration: number }
   | { type: 'vote-timer'; timeRemaining: number }
   | { type: 'vote-update'; votesReceived: number; totalPlayers: number }
-  | { type: 'vote-result'; winner: string; allVotes: Record<string, string>; gameState: Partial<GameState>; wasTiebreaker?: boolean }
+  | { type: 'vote-result'; winner: string; allVotes: Record<string, string>; gameState: Partial<GameState>; wasTiebreaker?: boolean; tiebreakerPlayerName?: string }
   | { type: 'search-result'; clue: CollectedClue | null; gameState: Partial<GameState> }
   | { type: 'travel-result'; success: boolean; message: string; timeSpent: number; gameState: Partial<GameState> }
   | { type: 'pilot-result'; identified: boolean; message: string; possibleMatches?: string[]; gameState: Partial<GameState> }
@@ -75,6 +75,7 @@ export interface VotingState {
   votes: Record<string, string>
   winner?: string
   wasTiebreaker?: boolean
+  tiebreakerPlayerName?: string
 }
 
 interface PartyKitContextType {
@@ -222,7 +223,7 @@ export function PartyKitProvider({ children }: { children: ReactNode }) {
         break
 
       case 'vote-result':
-        setVotingState(prev => prev ? { ...prev, winner: message.winner, votes: message.allVotes, wasTiebreaker: message.wasTiebreaker } : null)
+        setVotingState(prev => prev ? { ...prev, winner: message.winner, votes: message.allVotes, wasTiebreaker: message.wasTiebreaker, tiebreakerPlayerName: message.tiebreakerPlayerName } : null)
         setGameState(message.gameState as GameState)
         // Clear voting state after showing results (longer if tiebreaker for dramatic effect)
         setTimeout(() => setVotingState(null), message.wasTiebreaker ? 3500 : 2000)

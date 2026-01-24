@@ -225,7 +225,7 @@ export type ServerMessage =
   | { type: 'vote-started'; prompt: string; options: string[]; votingType: VotingState['votingType']; duration: number }
   | { type: 'vote-timer'; timeRemaining: number }
   | { type: 'vote-update'; votesReceived: number; totalPlayers: number }
-  | { type: 'vote-result'; winner: string; allVotes: Record<string, string>; gameState: Partial<GameState>; wasTiebreaker?: boolean }
+  | { type: 'vote-result'; winner: string; allVotes: Record<string, string>; gameState: Partial<GameState>; wasTiebreaker?: boolean; tiebreakerPlayerName?: string }
   | { type: 'search-result'; clue: CollectedClue | null; gameState: Partial<GameState> }
   | { type: 'travel-result'; success: boolean; message: string; timeSpent: number; gameState: Partial<GameState> }
   | { type: 'pilot-result'; identified: boolean; message: string; possibleMatches?: string[]; gameState: Partial<GameState> }
