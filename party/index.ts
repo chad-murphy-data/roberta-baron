@@ -364,6 +364,8 @@ export default class GameRoom implements Party.Server {
       }
     }
 
+    // Check if there was a tie that needed breaking
+    const wasTiebreaker = winners.length > 1;
     const winner = winners[Math.floor(Math.random() * winners.length)];
     const allVotes = { ...this.state.votingState.votes };
 
@@ -374,6 +376,7 @@ export default class GameRoom implements Party.Server {
       type: "vote-result",
       winner,
       allVotes,
+      wasTiebreaker,
       gameState: this.state.gameEngine?.getPublicGameState() || {}
     });
   }

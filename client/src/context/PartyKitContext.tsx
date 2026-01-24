@@ -11,7 +11,7 @@ export type ServerMessage =
   | { type: 'vote-started'; prompt: string; options: string[]; votingType: VotingState['votingType']; duration: number }
   | { type: 'vote-timer'; timeRemaining: number }
   | { type: 'vote-update'; votesReceived: number; totalPlayers: number }
-  | { type: 'vote-result'; winner: string; allVotes: Record<string, string>; gameState: Partial<GameState> }
+  | { type: 'vote-result'; winner: string; allVotes: Record<string, string>; gameState: Partial<GameState>; wasTiebreaker?: boolean }
   | { type: 'search-result'; clue: CollectedClue | null; gameState: Partial<GameState> }
   | { type: 'travel-result'; success: boolean; message: string; timeSpent: number; gameState: Partial<GameState> }
   | { type: 'pilot-result'; identified: boolean; message: string; possibleMatches?: string[]; gameState: Partial<GameState> }
@@ -59,6 +59,7 @@ export interface GameState {
   availableLocations: SearchLocation[]
   searchedLocations: string[]
   totalCities: number
+  destinationOptions?: string[] // Pre-set travel options (always 4)
   victoryMessage?: string
   defeatMessage?: string
   robertaQuote?: string
@@ -73,6 +74,7 @@ export interface VotingState {
   timeRemaining: number
   votes: Record<string, string>
   winner?: string
+  wasTiebreaker?: boolean
 }
 
 interface PartyKitContextType {
@@ -216,10 +218,10 @@ export function PartyKitProvider({ children }: { children: ReactNode }) {
         break
 
       case 'vote-result':
-        setVotingState(prev => prev ? { ...prev, winner: message.winner, votes: message.allVotes } : null)
+        setVotingState(prev => prev ? { ...prev, winner: message.winner, votes: message.allVotes, wasTiebreaker: message.wasTiebreaker } : null)
         setGameState(message.gameState as GameState)
-        // Clear voting state after showing results
-        setTimeout(() => setVotingState(null), 2000)
+        // Clear voting state after showing results (longer if tiebreaker for dramatic effect)
+        setTimeout(() => setVotingState(null), message.wasTiebreaker ? 3500 : 2000)
         break
 
       case 'search-result':

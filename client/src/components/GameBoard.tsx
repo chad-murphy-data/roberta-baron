@@ -30,6 +30,7 @@ interface GameState {
   availableLocations: SearchLocation[]
   searchedLocations: string[]
   totalCities: number
+  destinationOptions?: string[]
 }
 
 interface VotingType {
@@ -51,16 +52,13 @@ export default function GameBoard({ gameState, onSearch, onStartVote, isHost: _i
   const allLocationsSearched = gameState.searchedLocations.length >= 3
 
   const handleTravelVote = () => {
-    // Generate destination options
-    const options = [
-      'Seattle, WA',
-      'San Francisco, CA',
-      'Austin, TX',
-      'Chicago, IL',
-      'Atlanta, GA',
-      'New York City, NY',
-      'Boston, MA'
-    ].filter(() => Math.random() > 0.5).slice(0, 4)
+    // Use pre-set destination options from game state (always exactly 4)
+    const options = gameState.destinationOptions || []
+
+    if (options.length === 0) {
+      console.error('No destination options available')
+      return
+    }
 
     onStartVote('Where should we travel next?', options, 'travel')
   }

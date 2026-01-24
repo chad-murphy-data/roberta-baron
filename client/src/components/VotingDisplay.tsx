@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 interface Player {
   id: string
   name: string
@@ -12,17 +14,29 @@ interface VotingState {
   timeRemaining: number
   votes: Record<string, string>
   winner?: string
+  wasTiebreaker?: boolean
 }
 
 interface VotingDisplayProps {
   votingState: VotingState
   players: Player[]
   isHost: boolean
+  onVote?: (vote: string) => void
 }
 
-export default function VotingDisplay({ votingState, players }: VotingDisplayProps) {
+export default function VotingDisplay({ votingState, players, isHost, onVote }: VotingDisplayProps) {
+  const [hasVoted, setHasVoted] = useState(false)
+  const [selectedOption, setSelectedOption] = useState<string | null>(null)
+
   const votesReceived = Object.keys(votingState.votes).length
   const totalPlayers = players.length
+
+  const handleHostVote = (option: string) => {
+    if (hasVoted || !onVote) return
+    setSelectedOption(option)
+    setHasVoted(true)
+    onVote(option)
+  }
 
   // Count votes for each option
   const voteCounts: Record<string, number> = {}
@@ -60,6 +74,11 @@ export default function VotingDisplay({ votingState, players }: VotingDisplayPro
             borderRadius: '8px',
             marginTop: '16px'
           }}>
+            {votingState.wasTiebreaker && (
+              <p style={{ color: 'var(--warning)', marginBottom: '12px', fontWeight: 'bold' }}>
+                It's a tie! Randomly selecting...
+              </p>
+            )}
             <p style={{ color: 'var(--text-muted)', marginBottom: '8px' }}>Result:</p>
             <p style={{ fontSize: '1.5rem', color: 'var(--gold)' }}>
               {votingState.winner}
@@ -73,12 +92,19 @@ export default function VotingDisplay({ votingState, players }: VotingDisplayPro
           const count = voteCounts[option] || 0
           const percentage = totalPlayers > 0 ? (count / totalPlayers) * 100 : 0
           const isWinner = votingState.winner === option
+          const isSelected = selectedOption === option
 
           return (
             <div
               key={option}
-              className={`vote-option ${isWinner ? 'winner' : ''}`}
-              style={{ position: 'relative', overflow: 'hidden' }}
+              className={`vote-option ${isWinner ? 'winner' : ''} ${isSelected ? 'selected' : ''}`}
+              style={{
+                position: 'relative',
+                overflow: 'hidden',
+                cursor: isHost && !hasVoted && !votingState.winner ? 'pointer' : 'default',
+                border: isSelected ? '2px solid var(--gold)' : undefined
+              }}
+              onClick={() => isHost && !hasVoted && !votingState.winner && handleHostVote(option)}
             >
               {/* Progress bar background */}
               {votingState.winner && (
@@ -102,6 +128,11 @@ export default function VotingDisplay({ votingState, players }: VotingDisplayPro
                     {count} vote{count !== 1 ? 's' : ''}
                   </span>
                 )}
+                {isSelected && !votingState.winner && (
+                  <span style={{ color: 'var(--gold)', fontWeight: 'bold' }}>
+                    Your vote
+                  </span>
+                )}
               </div>
             </div>
           )
@@ -109,7 +140,11 @@ export default function VotingDisplay({ votingState, players }: VotingDisplayPro
       </div>
 
       <p style={{ textAlign: 'center', marginTop: '32px', color: 'var(--text-muted)' }}>
-        Players vote on their phones
+        {isHost && !hasVoted && !votingState.winner
+          ? 'Click an option to cast your vote!'
+          : isHost && hasVoted && !votingState.winner
+          ? 'Waiting for other players...'
+          : 'Players vote on their phones'}
       </p>
     </div>
   )

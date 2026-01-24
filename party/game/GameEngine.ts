@@ -38,6 +38,9 @@ export class GameEngine {
     // Generate destination clues for each destination (cities 2-5)
     const destinationClues = this.generateDestinationCluesForPath(companies);
 
+    // Pre-generate travel options for each city (except the last)
+    const travelOptions = this.generateTravelOptionsForPath(companies);
+
     return {
       criminal,
       companies,
@@ -51,7 +54,8 @@ export class GameEngine {
       searchedLocations: [],
       gamePhase: 'lobby',
       validCriminalClues: validClues,
-      validDestinationClues: destinationClues
+      validDestinationClues: destinationClues,
+      travelOptions
     };
   }
 
@@ -107,6 +111,40 @@ export class GameEngine {
     return companies.slice(1).map(company => generateDestinationClues(company));
   }
 
+  // Pre-generate 4 travel options for each city in the path
+  // This ensures consistent options throughout the game
+  private generateTravelOptionsForPath(companies: Brand[]): string[][] {
+    const options: string[][] = [];
+
+    for (let i = 0; i < companies.length - 1; i++) {
+      const correctNext = companies[i + 1];
+      const correctOption = `${correctNext.city}, ${correctNext.state}`;
+
+      // Get 3 decoy options from other brands
+      const decoys = this.selectDecoyDestinations(correctOption, 3);
+
+      // Combine and shuffle
+      const cityOptions = [correctOption, ...decoys].sort(() => Math.random() - 0.5);
+      options.push(cityOptions);
+    }
+
+    return options;
+  }
+
+  // Select plausible decoy destinations (cities that are NOT the correct answer)
+  private selectDecoyDestinations(correctOption: string, count: number): string[] {
+    const allCities = PUBLIC_BRANDS
+      .map(b => `${b.city}, ${b.state}`)
+      .filter(c => c !== correctOption);
+
+    // Remove duplicates
+    const uniqueCities = [...new Set(allCities)];
+
+    // Shuffle and take the requested count
+    const shuffled = uniqueCities.sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
+  }
+
   getState(): GameState {
     return { ...this.gameState };
   }
@@ -155,42 +193,51 @@ export class GameEngine {
 
   private generateClueForSearch(cityIndex: number, locationId: string): CollectedClue | null {
     const currentCompany = this.gameState.companies[cityIndex];
-    const locationsSearchedThisCity = this.gameState.searchedLocations.filter(
-      s => s.startsWith(`${cityIndex}-`)
+    const cityKey = `${currentCompany.city}, ${currentCompany.state}`;
+
+    // Check if we've already given a criminal clue at this city
+    const criminalCluesThisCity = this.gameState.cluesCollected.filter(
+      c => c.type === 'criminal' && c.cityFound === cityKey
     ).length;
 
-    // First 3 cities: Mix of criminal and destination clues
-    // Last 2 cities: Only destination clues (criminal should be identified by then)
+    // Count total criminal clues collected across all cities
+    const totalCriminalClues = this.gameState.cluesCollected.filter(
+      c => c.type === 'criminal'
+    ).length;
 
-    if (cityIndex < 3) {
-      // Alternate between criminal and destination clues
-      if (locationsSearchedThisCity % 2 === 1) {
-        // Criminal clue
-        const clueIndex = Math.floor(locationsSearchedThisCity / 2);
-        if (clueIndex < this.gameState.validCriminalClues.length) {
-          const clueId = this.gameState.validCriminalClues[clueIndex];
-          const clue = getClueById(clueId);
-          if (clue) {
-            const text = this.gameState.criminal.gender === 'M'
-              ? clue.textMale
-              : clue.textFemale;
-            return {
-              type: 'criminal',
-              text,
-              cityFound: `${currentCompany.city}, ${currentCompany.state}`
-            };
-          }
-        }
+    const clues: CollectedClue[] = [];
+
+    // Determine if this location should give a criminal clue
+    // Rule: Max 1 criminal clue per city, only first 3 cities, max 3 total
+    const shouldGiveCriminalClue =
+      cityIndex < 3 &&
+      criminalCluesThisCity === 0 &&
+      totalCriminalClues < 3 &&
+      this.shouldLocationGiveCriminalClue(cityIndex, locationId);
+
+    if (shouldGiveCriminalClue) {
+      const clueId = this.gameState.validCriminalClues[totalCriminalClues];
+      const clue = getClueById(clueId);
+      if (clue) {
+        const text = this.gameState.criminal.gender === 'M'
+          ? clue.textMale
+          : clue.textFemale;
+        clues.push({
+          type: 'criminal',
+          text,
+          cityFound: cityKey
+        });
       }
     }
 
-    // Destination clue (if not final city)
+    // Always give a destination clue (if not final city)
+    // This ensures players always know where to go next
     if (cityIndex < this.gameState.companies.length - 1) {
       const destClues = this.gameState.validDestinationClues[cityIndex];
       if (destClues && destClues.length > 0) {
         // Pick a clue based on how many we've given
         const destCluesGivenThisCity = this.gameState.cluesCollected.filter(
-          c => c.type === 'destination' && c.cityFound === `${currentCompany.city}, ${currentCompany.state}`
+          c => c.type === 'destination' && c.cityFound === cityKey
         ).length;
 
         // Prioritize certain clue types for narrowing
@@ -198,15 +245,44 @@ export class GameEngine {
         const clueType = priorityOrder[destCluesGivenThisCity % priorityOrder.length];
         const clue = destClues.find(c => c.type === clueType) || destClues[0];
 
-        return {
+        clues.push({
           type: 'destination',
           text: clue.text,
-          cityFound: `${currentCompany.city}, ${currentCompany.state}`
-        };
+          cityFound: cityKey
+        });
       }
     }
 
+    // If we collected clues, add them all and return the first one
+    // (The search function will add them via cluesCollected)
+    if (clues.length > 0) {
+      // If there are multiple clues (criminal + destination), add extras to collected
+      if (clues.length > 1) {
+        // Add all but the first to cluesCollected (the first will be returned and added by search())
+        for (let i = 1; i < clues.length; i++) {
+          this.gameState.cluesCollected.push(clues[i]);
+        }
+      }
+      return clues[0];
+    }
+
     return null;
+  }
+
+  // Determine if a specific location should give the criminal clue for this city
+  // Uses deterministic randomization based on city index to ensure consistent behavior
+  private shouldLocationGiveCriminalClue(cityIndex: number, locationId: string): boolean {
+    const currentCompany = this.gameState.companies[cityIndex];
+    const locations = LOCATIONS_BY_INDUSTRY[currentCompany.industry];
+
+    if (!locations || locations.length === 0) return false;
+
+    // Use city index as seed for which location gets the criminal clue
+    // This ensures the same location is "chosen" for each city throughout the game
+    const criminalClueLocationIndex = cityIndex % locations.length;
+    const criminalClueLocation = locations[criminalClueLocationIndex];
+
+    return criminalClueLocation.id === locationId;
   }
 
   getSearchedLocationsThisCity(): string[] {
@@ -324,29 +400,20 @@ export class GameEngine {
   }
 
   getDestinationOptions(): string[] {
+    const currentIndex = this.gameState.currentCityIndex;
+
+    // Use pre-generated options for this city
+    if (currentIndex < this.gameState.travelOptions.length) {
+      return this.gameState.travelOptions[currentIndex];
+    }
+
+    // Fallback (shouldn't happen) - generate on the fly
     const nextCompany = this.getNextDestination();
     if (!nextCompany) return [];
 
-    // Get destination clues collected so far
-    const destClues = this.gameState.cluesCollected.filter(c => c.type === 'destination');
-
-    // Generate plausible options including the correct one
     const correctOption = `${nextCompany.city}, ${nextCompany.state}`;
-    const options = new Set<string>([correctOption]);
-
-    // Add decoy options based on partial clue matches
-    const allBrands = PUBLIC_BRANDS.filter(b =>
-      `${b.city}, ${b.state}` !== correctOption
-    );
-
-    // Filter decoys to be somewhat plausible
-    const shuffled = allBrands.sort(() => Math.random() - 0.5);
-    for (const brand of shuffled) {
-      if (options.size >= 4) break;
-      options.add(`${brand.city}, ${brand.state}`);
-    }
-
-    return Array.from(options).sort(() => Math.random() - 0.5);
+    const decoys = this.selectDecoyDestinations(correctOption, 3);
+    return [correctOption, ...decoys].sort(() => Math.random() - 0.5);
   }
 
   getRobertaQuote(): string {
@@ -409,7 +476,7 @@ ${this.gameState.criminal.name} slipped away.
 Better luck next time.`;
   }
 
-  getPublicGameState(): Partial<GameState> {
+  getPublicGameState(): Partial<GameState> & { destinationOptions?: string[] } {
     const state = this.getState();
     const currentCompany = this.getCurrentCompany();
 
@@ -436,6 +503,8 @@ Better luck next time.`;
       searchedLocations: this.getSearchedLocationsThisCity(),
       // Total cities to visit
       totalCities: state.companies.length,
+      // Pre-set destination options for the current city (always exactly 4)
+      destinationOptions: this.getDestinationOptions(),
       // Victory/defeat messages
       victoryMessage: state.gamePhase === 'victory' ? this.getVictoryMessage() : undefined,
       defeatMessage: state.gamePhase === 'defeat' ? this.getDefeatMessage() : undefined,
@@ -443,6 +512,6 @@ Better luck next time.`;
       robertaQuote: state.gamePhase === 'intro' ? this.getRobertaQuote() : undefined,
       // Criminal archetype description (only if identified)
       criminalDescription: state.criminalIdentified ? state.criminal.description : undefined
-    } as Partial<GameState>;
+    } as Partial<GameState> & { destinationOptions?: string[] };
   }
 }

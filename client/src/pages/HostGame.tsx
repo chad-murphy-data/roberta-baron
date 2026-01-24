@@ -23,6 +23,7 @@ export default function HostGame() {
     proceedFromIntro,
     searchLocation,
     startVote,
+    submitVote,
     error
   } = usePartyKit()
 
@@ -142,6 +143,7 @@ export default function HostGame() {
             votingState={votingState}
             players={players}
             isHost={true}
+            onVote={submitVote}
           />
         ) : (
           <GameBoard

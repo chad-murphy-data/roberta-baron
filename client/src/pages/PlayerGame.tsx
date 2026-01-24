@@ -118,6 +118,11 @@ export default function PlayerGame() {
       <div className="centered">
         <div className="card" style={{ maxWidth: '400px', textAlign: 'center' }}>
           <h2 style={{ marginBottom: '16px' }}>Vote Result</h2>
+          {votingState.wasTiebreaker && (
+            <p style={{ color: 'var(--warning)', marginBottom: '12px', fontWeight: 'bold' }}>
+              It's a tie! Randomly selecting...
+            </p>
+          )}
           <p style={{ color: 'var(--gold)', fontSize: '1.5rem' }}>
             {votingState.winner}
           </p>
