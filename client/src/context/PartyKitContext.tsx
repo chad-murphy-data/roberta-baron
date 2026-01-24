@@ -98,8 +98,8 @@ interface PartyKitContextType {
 
 const PartyKitContext = createContext<PartyKitContextType | null>(null)
 
-// Get PartyKit host from environment or default to localhost for development
-const PARTYKIT_HOST = import.meta.env.VITE_PARTYKIT_HOST || 'localhost:1999'
+// Get PartyKit host from environment or use the deployed PartyKit server
+const PARTYKIT_HOST = import.meta.env.VITE_PARTYKIT_HOST || 'all-hands-on-deck.chad-murphy-data.partykit.dev'
 
 // Generate a random 4-character room code
 function generateRoomCode(): string {
