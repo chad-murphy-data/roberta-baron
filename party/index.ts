@@ -368,17 +368,61 @@ export default class GameRoom implements Party.Server {
     const wasTiebreaker = winners.length > 1;
     const winner = winners[Math.floor(Math.random() * winners.length)];
     const allVotes = { ...this.state.votingState.votes };
+    const votingType = this.state.votingState.votingType;
 
     // Clear voting state
     this.state.votingState = null;
 
-    this.broadcast({
-      type: "vote-result",
-      winner,
-      allVotes,
-      wasTiebreaker,
-      gameState: this.state.gameEngine?.getPublicGameState() || {}
-    });
+    // Execute the action based on vote type
+    if (votingType === 'travel' && this.state.gameEngine) {
+      // Actually perform the travel
+      const result = this.state.gameEngine.travel(winner);
+
+      this.broadcast({
+        type: "vote-result",
+        winner,
+        allVotes,
+        wasTiebreaker,
+        gameState: this.state.gameEngine.getPublicGameState()
+      });
+
+      // Also send travel result for any additional handling
+      this.broadcast({
+        type: "travel-result",
+        success: result.success,
+        message: result.message,
+        timeSpent: result.timeSpent,
+        gameState: this.state.gameEngine.getPublicGameState()
+      });
+    } else if (votingType === 'pilot' && this.state.gameEngine && winner === 'Yes, file the ticket') {
+      // Submit to Pilot for criminal identification
+      const result = this.state.gameEngine.submitToAI([]);
+
+      this.broadcast({
+        type: "vote-result",
+        winner,
+        allVotes,
+        wasTiebreaker,
+        gameState: this.state.gameEngine.getPublicGameState()
+      });
+
+      this.broadcast({
+        type: "pilot-result",
+        identified: result.identified,
+        message: result.message,
+        possibleMatches: result.possibleMatches,
+        gameState: this.state.gameEngine.getPublicGameState()
+      });
+    } else {
+      // Default: just broadcast the vote result
+      this.broadcast({
+        type: "vote-result",
+        winner,
+        allVotes,
+        wasTiebreaker,
+        gameState: this.state.gameEngine?.getPublicGameState() || {}
+      });
+    }
   }
 
   private handleSearchLocation(conn: Party.Connection, locationId: string) {

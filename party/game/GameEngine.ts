@@ -113,35 +113,37 @@ export class GameEngine {
 
   // Pre-generate 4 travel options for each city in the path
   // This ensures consistent options throughout the game
+  // Options are company names (e.g., "Starbucks") not cities
   private generateTravelOptionsForPath(companies: Brand[]): string[][] {
     const options: string[][] = [];
 
     for (let i = 0; i < companies.length - 1; i++) {
       const correctNext = companies[i + 1];
-      const correctOption = `${correctNext.city}, ${correctNext.state}`;
+      const correctOption = correctNext.name;
 
-      // Get 3 decoy options from other brands
-      const decoys = this.selectDecoyDestinations(correctOption, 3);
+      // Get 3 decoy options from other brands (excluding companies in the path)
+      const pathCompanyNames = companies.map(c => c.name);
+      const decoys = this.selectDecoyCompanies(correctOption, pathCompanyNames, 3);
 
       // Combine and shuffle
-      const cityOptions = [correctOption, ...decoys].sort(() => Math.random() - 0.5);
-      options.push(cityOptions);
+      const companyOptions = [correctOption, ...decoys].sort(() => Math.random() - 0.5);
+      options.push(companyOptions);
     }
 
     return options;
   }
 
-  // Select plausible decoy destinations (cities that are NOT the correct answer)
-  private selectDecoyDestinations(correctOption: string, count: number): string[] {
-    const allCities = PUBLIC_BRANDS
-      .map(b => `${b.city}, ${b.state}`)
-      .filter(c => c !== correctOption);
+  // Select plausible decoy companies (companies that are NOT in the criminal's path)
+  private selectDecoyCompanies(correctOption: string, excludeNames: string[], count: number): string[] {
+    const allCompanies = PUBLIC_BRANDS
+      .map(b => b.name)
+      .filter(name => name !== correctOption && !excludeNames.includes(name));
 
     // Remove duplicates
-    const uniqueCities = [...new Set(allCities)];
+    const uniqueCompanies = [...new Set(allCompanies)];
 
     // Shuffle and take the requested count
-    const shuffled = uniqueCities.sort(() => Math.random() - 0.5);
+    const shuffled = uniqueCompanies.sort(() => Math.random() - 0.5);
     return shuffled.slice(0, count);
   }
 
@@ -411,8 +413,9 @@ export class GameEngine {
     const nextCompany = this.getNextDestination();
     if (!nextCompany) return [];
 
-    const correctOption = `${nextCompany.city}, ${nextCompany.state}`;
-    const decoys = this.selectDecoyDestinations(correctOption, 3);
+    const correctOption = nextCompany.name;
+    const pathCompanyNames = this.gameState.companies.map(c => c.name);
+    const decoys = this.selectDecoyCompanies(correctOption, pathCompanyNames, 3);
     return [correctOption, ...decoys].sort(() => Math.random() - 0.5);
   }
 
