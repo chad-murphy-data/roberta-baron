@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react'
 interface VictoryScreenProps {
   message: string
   criminalName: string
+  onPlayAgain?: () => void
 }
 
-export default function VictoryScreen({ message, criminalName }: VictoryScreenProps) {
+export default function VictoryScreen({ message, criminalName, onPlayAgain }: VictoryScreenProps) {
   const [confetti, setConfetti] = useState<Array<{ id: number; left: number; delay: number; color: string }>>([])
 
   useEffect(() => {
@@ -88,6 +89,16 @@ export default function VictoryScreen({ message, criminalName }: VictoryScreenPr
         <p style={{ marginTop: '32px', color: 'var(--text-muted)' }}>
           Roberta Baron's network grows weaker. Well done, team!
         </p>
+
+        {onPlayAgain && (
+          <button
+            className="btn btn-primary btn-large"
+            onClick={onPlayAgain}
+            style={{ marginTop: '32px' }}
+          >
+            Play Again
+          </button>
+        )}
       </div>
     </div>
   )

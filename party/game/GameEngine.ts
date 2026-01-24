@@ -133,18 +133,77 @@ export class GameEngine {
     return options;
   }
 
-  // Select plausible decoy companies (companies that are NOT in the criminal's path)
+  // Select plausible decoy companies that share SOME but not ALL attributes with the correct answer
+  // This makes the game more challenging by requiring multiple clues to deduce the answer
   private selectDecoyCompanies(correctOption: string, excludeNames: string[], count: number): string[] {
-    const allCompanies = PUBLIC_BRANDS
-      .map(b => b.name)
-      .filter(name => name !== correctOption && !excludeNames.includes(name));
+    const correctBrand = PUBLIC_BRANDS.find(b => b.name === correctOption);
+    if (!correctBrand) {
+      // Fallback to random selection
+      const allCompanies = PUBLIC_BRANDS
+        .map(b => b.name)
+        .filter(name => name !== correctOption && !excludeNames.includes(name));
+      return allCompanies.sort(() => Math.random() - 0.5).slice(0, count);
+    }
 
-    // Remove duplicates
-    const uniqueCompanies = [...new Set(allCompanies)];
+    // Score each potential decoy by shared attributes
+    const candidates = PUBLIC_BRANDS
+      .filter(b => b.name !== correctOption && !excludeNames.includes(b.name))
+      .map(brand => ({
+        brand,
+        sharedAttributes: this.countSharedAttributes(correctBrand, brand)
+      }));
 
-    // Shuffle and take the requested count
-    const shuffled = uniqueCompanies.sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, count);
+    // Best decoys share 1-2 attributes (not 0, not all)
+    const goodDecoys = candidates
+      .filter(c => c.sharedAttributes >= 1 && c.sharedAttributes <= 2)
+      .sort(() => Math.random() - 0.5);
+
+    const decoys: Brand[] = [];
+
+    // Try to get at least one decoy with same region
+    const sameRegion = goodDecoys.find(c => c.brand.region === correctBrand.region);
+    if (sameRegion && !decoys.includes(sameRegion.brand)) {
+      decoys.push(sameRegion.brand);
+    }
+
+    // Try to get at least one decoy with same industry
+    const sameIndustry = goodDecoys.find(c =>
+      c.brand.industry === correctBrand.industry && !decoys.includes(c.brand)
+    );
+    if (sameIndustry) {
+      decoys.push(sameIndustry.brand);
+    }
+
+    // Fill remaining slots with other good decoys
+    for (const c of goodDecoys) {
+      if (decoys.length >= count) break;
+      if (!decoys.includes(c.brand)) {
+        decoys.push(c.brand);
+      }
+    }
+
+    // If not enough good decoys, add random ones
+    const remaining = candidates
+      .filter(c => !decoys.includes(c.brand))
+      .sort(() => Math.random() - 0.5);
+
+    for (const c of remaining) {
+      if (decoys.length >= count) break;
+      decoys.push(c.brand);
+    }
+
+    return decoys.map(b => b.name);
+  }
+
+  // Count how many attributes two brands share
+  private countSharedAttributes(a: Brand, b: Brand): number {
+    let shared = 0;
+    if (a.region === b.region) shared++;
+    if (a.industry === b.industry) shared++;
+    if (a.subIndustry === b.subIndustry) shared++;
+    if (a.era === b.era) shared++;
+    if (a.state === b.state) shared++;
+    return shared;
   }
 
   getState(): GameState {
@@ -294,7 +353,7 @@ export class GameEngine {
       .map(s => s.split('-')[1]);
   }
 
-  travel(destination: string): { success: boolean; message: string; timeSpent: number } {
+  travel(destination: string): { success: boolean; message: string; timeSpent: number; wrongCity?: boolean } {
     const nextCompany = this.getNextDestination();
 
     if (!nextCompany) {
@@ -306,9 +365,28 @@ export class GameEngine {
     this.gameState.hoursRemaining -= flightTime;
 
     // Check if correct destination
+    // Support multiple formats:
+    // - "Company" (just the name)
+    // - "City, ST" (city and state)
+    // - "Company (City, ST)" (new format with both)
     const correctCity = `${nextCompany.city}, ${nextCompany.state}`;
+    const correctWithCity = `${nextCompany.name} (${nextCompany.city}, ${nextCompany.state})`;
 
-    if (destination === correctCity || destination === nextCompany.name) {
+    // Extract company name from "Company (City, ST)" format if present
+    const companyNameMatch = destination.match(/^(.+?)\s*\(/);
+    const destinationCompanyName = companyNameMatch ? companyNameMatch[1].trim() : destination;
+
+    const isCorrect =
+      destination === correctCity ||
+      destination === nextCompany.name ||
+      destination === correctWithCity ||
+      destinationCompanyName === nextCompany.name;
+
+    if (isCorrect) {
+      // Clear any wrong city state
+      this.gameState.wrongCityName = undefined;
+      this.gameState.previousCityIndex = undefined;
+
       this.gameState.currentCityIndex++;
       this.gameState.gamePhase = 'searching';
 
@@ -323,13 +401,62 @@ export class GameEngine {
         timeSpent: flightTime
       };
     } else {
-      // Wrong destination - they still travel but waste time
+      // Wrong destination - set wrong city state
+      this.gameState.wrongCityName = destination;
+      this.gameState.previousCityIndex = this.gameState.currentCityIndex;
+      this.gameState.gamePhase = 'wrongCity';
+
       return {
         success: false,
         message: `You traveled to ${destination}, but the trail has gone cold. The criminal isn't here.`,
-        timeSpent: flightTime
+        timeSpent: flightTime,
+        wrongCity: true
       };
     }
+  }
+
+  // Return from wrong city back to the previous correct city
+  flyBack(): { success: boolean; message: string; timeSpent: number } {
+    if (this.gameState.gamePhase !== 'wrongCity' || this.gameState.previousCityIndex === undefined) {
+      return { success: false, message: 'Not in a wrong city', timeSpent: 0 };
+    }
+
+    // Random flight time between 4-5 hours (penalty for wrong guess!)
+    const flightTime = 4 + Math.floor(Math.random() * 2);
+    this.gameState.hoursRemaining -= flightTime;
+
+    const currentCompany = this.gameState.companies[this.gameState.previousCityIndex];
+
+    // Clear wrong city state and return to searching
+    this.gameState.wrongCityName = undefined;
+    this.gameState.previousCityIndex = undefined;
+    this.gameState.gamePhase = 'searching';
+
+    // Check if time ran out
+    if (this.gameState.hoursRemaining <= 0) {
+      this.gameState.gamePhase = 'defeat';
+    }
+
+    return {
+      success: true,
+      message: `Returned to ${currentCompany.name} in ${currentCompany.city}`,
+      timeSpent: flightTime
+    };
+  }
+
+  // Get a dead-end message for when searching in a wrong city
+  getDeadEndMessage(): string {
+    const messages = [
+      "Nope, haven't seen anyone suspicious around here.",
+      "A corporate thief? In THIS economy? Haven't heard anything.",
+      "You just missed... actually, no. Nobody's been here.",
+      "The only crime here is the coffee in the break room.",
+      "Security says the only unusual activity was someone microwaving fish.",
+      "Trail's cold. Colder than the AC in this building.",
+      "Nothing to see here. The criminal definitely isn't at this company.",
+      "Dead end. Time to head back and try again."
+    ];
+    return messages[Math.floor(Math.random() * messages.length)];
   }
 
   checkEndGame(): void {
@@ -479,15 +606,33 @@ ${this.gameState.criminal.name} slipped away.
 Better luck next time.`;
   }
 
-  getPublicGameState(): Partial<GameState> & { destinationOptions?: string[] } {
+  getPublicGameState(): Partial<GameState> & { destinationOptions?: string[]; destinationOptionsWithCities?: { name: string; city: string; state: string }[]; currentCityClues?: CollectedClue[]; deadEndMessage?: string } {
     const state = this.getState();
     const currentCompany = this.getCurrentCompany();
+    const currentCityKey = `${currentCompany.city}, ${currentCompany.state}`;
+
+    // Filter clues: suspect clues persist, destination clues only for current city
+    const currentCityClues = state.cluesCollected.filter(clue =>
+      clue.type === 'criminal' || clue.cityFound === currentCityKey
+    );
+
+    // Get destination options with city info for display
+    const destinationOptions = this.getDestinationOptions();
+    const destinationOptionsWithCities = destinationOptions.map(name => {
+      const brand = PUBLIC_BRANDS.find(b => b.name === name);
+      return {
+        name,
+        city: brand?.city || '',
+        state: brand?.state || ''
+      };
+    });
 
     // Return a sanitized version without revealing the criminal identity
     return {
       currentCityIndex: state.currentCityIndex,
       hoursRemaining: state.hoursRemaining,
-      cluesCollected: state.cluesCollected,
+      cluesCollected: state.cluesCollected, // Full history for reference
+      currentCityClues, // Filtered clues for display
       criminalIdentified: state.criminalIdentified,
       criminalName: state.criminalIdentified ? state.criminal.name : null,
       fidelityMode: state.fidelityMode,
@@ -507,7 +652,11 @@ Better luck next time.`;
       // Total cities to visit
       totalCities: state.companies.length,
       // Pre-set destination options for the current city (always exactly 4)
-      destinationOptions: this.getDestinationOptions(),
+      destinationOptions,
+      destinationOptionsWithCities,
+      // Wrong city state
+      wrongCityName: state.wrongCityName,
+      deadEndMessage: state.gamePhase === 'wrongCity' ? this.getDeadEndMessage() : undefined,
       // Victory/defeat messages
       victoryMessage: state.gamePhase === 'victory' ? this.getVictoryMessage() : undefined,
       defeatMessage: state.gamePhase === 'defeat' ? this.getDefeatMessage() : undefined,
@@ -515,6 +664,6 @@ Better luck next time.`;
       robertaQuote: state.gamePhase === 'intro' ? this.getRobertaQuote() : undefined,
       // Criminal archetype description (only if identified)
       criminalDescription: state.criminalIdentified ? state.criminal.description : undefined
-    } as Partial<GameState> & { destinationOptions?: string[] };
+    } as Partial<GameState> & { destinationOptions?: string[]; destinationOptionsWithCities?: { name: string; city: string; state: string }[]; currentCityClues?: CollectedClue[]; deadEndMessage?: string };
   }
 }

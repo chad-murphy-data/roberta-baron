@@ -20,10 +20,17 @@ interface CurrentCompany {
   stolenAsset: string
 }
 
+interface DestinationOption {
+  name: string
+  city: string
+  state: string
+}
+
 interface GameState {
   currentCityIndex: number
   hoursRemaining: number
   cluesCollected: CollectedClue[]
+  currentCityClues?: CollectedClue[] // Filtered clues for display
   criminalIdentified: boolean
   criminalName: string | null
   currentCompany: CurrentCompany
@@ -31,6 +38,7 @@ interface GameState {
   searchedLocations: string[]
   totalCities: number
   destinationOptions?: string[]
+  destinationOptionsWithCities?: DestinationOption[]
 }
 
 interface VotingType {
@@ -47,20 +55,33 @@ interface GameBoardProps {
 export default function GameBoard({ gameState, onSearch, onStartVote, isHost: _isHost }: GameBoardProps) {
   const [showClues, setShowClues] = useState(false)
 
-  const criminalClues = gameState.cluesCollected.filter(c => c.type === 'criminal')
-  const destinationClues = gameState.cluesCollected.filter(c => c.type === 'destination')
+  // Use currentCityClues if available (filtered: suspect clues persist, destination clues only for current city)
+  const displayClues = gameState.currentCityClues || gameState.cluesCollected
+  const criminalClues = displayClues.filter(c => c.type === 'criminal')
+  const destinationClues = displayClues.filter(c => c.type === 'destination')
   const allLocationsSearched = gameState.searchedLocations.length >= 3
 
   const handleTravelVote = () => {
-    // Use pre-set destination options from game state (always exactly 4)
-    const options = gameState.destinationOptions || []
+    // Use pre-set destination options with city info from game state (always exactly 4)
+    const optionsWithCities = gameState.destinationOptionsWithCities || []
 
-    if (options.length === 0) {
-      console.error('No destination options available')
+    if (optionsWithCities.length === 0) {
+      // Fallback to simple options
+      const options = gameState.destinationOptions || []
+      if (options.length === 0) {
+        console.error('No destination options available')
+        return
+      }
+      onStartVote('Where should we travel next?', options, 'travel')
       return
     }
 
-    onStartVote('Where should we travel next?', options, 'travel')
+    // Format options as "Company HQ (City, ST)"
+    const formattedOptions = optionsWithCities.map(opt =>
+      `${opt.name} (${opt.city}, ${opt.state})`
+    )
+
+    onStartVote('Where should we travel next?', formattedOptions, 'travel')
   }
 
   const handlePilotVote = () => {

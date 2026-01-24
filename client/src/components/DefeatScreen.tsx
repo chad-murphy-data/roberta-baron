@@ -1,8 +1,9 @@
 interface DefeatScreenProps {
   message: string
+  onPlayAgain?: () => void
 }
 
-export default function DefeatScreen({ message }: DefeatScreenProps) {
+export default function DefeatScreen({ message, onPlayAgain }: DefeatScreenProps) {
   return (
     <div className="defeat-screen">
       <div style={{
@@ -63,6 +64,16 @@ export default function DefeatScreen({ message }: DefeatScreenProps) {
         <p style={{ marginTop: '32px', color: 'var(--text-muted)' }}>
           The investigation continues another day...
         </p>
+
+        {onPlayAgain && (
+          <button
+            className="btn btn-primary btn-large"
+            onClick={onPlayAgain}
+            style={{ marginTop: '32px' }}
+          >
+            Play Again
+          </button>
+        )}
       </div>
     </div>
   )

@@ -151,6 +151,9 @@ export default class GameRoom implements Party.Server {
         case "get-news":
           this.handleGetNews(sender);
           break;
+        case "fly-back":
+          this.handleFlyBack(sender);
+          break;
       }
     } catch (error) {
       console.error("Error handling message:", error);
@@ -524,6 +527,23 @@ export default class GameRoom implements Party.Server {
     this.send(conn, {
       type: "news-headline",
       headline: this.state.gameEngine.getNewsHeadline()
+    });
+  }
+
+  private handleFlyBack(conn: Party.Connection) {
+    if (!this.state.gameEngine) {
+      this.send(conn, { type: "error", message: "Game not found" });
+      return;
+    }
+
+    const result = this.state.gameEngine.flyBack();
+
+    this.broadcast({
+      type: "fly-back-result",
+      success: result.success,
+      message: result.message,
+      timeSpent: result.timeSpent,
+      gameState: this.state.gameEngine.getPublicGameState()
     });
   }
 

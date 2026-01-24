@@ -117,10 +117,12 @@ export interface GameState {
     catchphrase?: string;
   };
   searchedLocations: string[];
-  gamePhase: 'lobby' | 'intro' | 'searching' | 'voting' | 'traveling' | 'pilot' | 'victory' | 'defeat';
+  gamePhase: 'lobby' | 'intro' | 'searching' | 'voting' | 'traveling' | 'pilot' | 'victory' | 'defeat' | 'wrongCity';
   validCriminalClues: number[]; // IDs of clues assigned to this game
   validDestinationClues: DestinationClue[][]; // Clues for each destination
   travelOptions: string[][]; // Pre-generated 4 options for each city (except last)
+  wrongCityName?: string; // Name of wrong city if player traveled to wrong destination
+  previousCityIndex?: number; // Index to return to after wrong city
 }
 
 export interface Room {
@@ -214,7 +216,8 @@ export type ClientMessage =
   | { type: 'submit-to-pilot' }
   | { type: 'get-state' }
   | { type: 'get-destinations' }
-  | { type: 'get-news' };
+  | { type: 'get-news' }
+  | { type: 'fly-back' };
 
 export type ServerMessage =
   | { type: 'room-joined'; roomCode: string; players: Player[]; isHost: boolean }
@@ -227,7 +230,8 @@ export type ServerMessage =
   | { type: 'vote-update'; votesReceived: number; totalPlayers: number }
   | { type: 'vote-result'; winner: string; allVotes: Record<string, string>; gameState: Partial<GameState>; wasTiebreaker?: boolean; tiebreakerPlayerName?: string }
   | { type: 'search-result'; clue: CollectedClue | null; gameState: Partial<GameState> }
-  | { type: 'travel-result'; success: boolean; message: string; timeSpent: number; gameState: Partial<GameState> }
+  | { type: 'travel-result'; success: boolean; message: string; timeSpent: number; gameState: Partial<GameState>; wrongCity?: boolean }
+  | { type: 'fly-back-result'; success: boolean; message: string; timeSpent: number; gameState: Partial<GameState> }
   | { type: 'pilot-result'; identified: boolean; message: string; possibleMatches?: string[]; gameState: Partial<GameState> }
   | { type: 'game-state'; gameState: Partial<GameState> | null }
   | { type: 'destination-options'; options: string[] }

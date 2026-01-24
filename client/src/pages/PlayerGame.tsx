@@ -85,6 +85,13 @@ export default function PlayerGame() {
           <h1 style={{ fontSize: '3rem', marginBottom: '16px' }}>🎉</h1>
           <h2 style={{ color: 'var(--success)', marginBottom: '16px' }}>Victory!</h2>
           <p>{gameState.criminalName} has been apprehended!</p>
+          <button
+            className="btn btn-primary"
+            onClick={() => navigate('/')}
+            style={{ marginTop: '24px' }}
+          >
+            Play Again
+          </button>
         </div>
       </div>
     )
@@ -97,6 +104,30 @@ export default function PlayerGame() {
           <h1 style={{ fontSize: '3rem', marginBottom: '16px' }}>😔</h1>
           <h2 style={{ color: 'var(--error)', marginBottom: '16px' }}>Escaped!</h2>
           <p>The criminal got away. Better luck next time!</p>
+          <button
+            className="btn btn-primary"
+            onClick={() => navigate('/')}
+            style={{ marginTop: '24px' }}
+          >
+            Play Again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Wrong city - waiting for host to fly back
+  if (gameState.gamePhase === 'wrongCity') {
+    return (
+      <div className="centered">
+        <div className="card" style={{ maxWidth: '400px', textAlign: 'center' }}>
+          <h1 style={{ fontSize: '2rem', marginBottom: '16px', color: 'var(--warning)' }}>Wrong City!</h1>
+          <p style={{ marginBottom: '16px' }}>
+            {gameState.wrongCityName || 'This location'} was a dead end.
+          </p>
+          <p style={{ color: 'var(--text-muted)' }}>
+            Watch the main screen - the host will fly back...
+          </p>
         </div>
       </div>
     )

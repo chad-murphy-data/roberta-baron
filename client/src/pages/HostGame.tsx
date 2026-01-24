@@ -7,6 +7,7 @@ import GameBoard from '../components/GameBoard'
 import VotingDisplay from '../components/VotingDisplay'
 import VictoryScreen from '../components/VictoryScreen'
 import DefeatScreen from '../components/DefeatScreen'
+import WrongCity from '../components/WrongCity'
 import NewsTicker from '../components/NewsTicker'
 
 export default function HostGame() {
@@ -24,6 +25,7 @@ export default function HostGame() {
     searchLocation,
     startVote,
     submitVote,
+    flyBack,
     error
   } = usePartyKit()
 
@@ -89,12 +91,17 @@ export default function HostGame() {
     )
   }
 
+  const handlePlayAgain = () => {
+    navigate('/')
+  }
+
   // Victory screen
   if (gameState.gamePhase === 'victory') {
     return (
       <VictoryScreen
         message={gameState.victoryMessage || 'You won!'}
         criminalName={gameState.criminalName || 'Unknown'}
+        onPlayAgain={handlePlayAgain}
       />
     )
   }
@@ -104,6 +111,19 @@ export default function HostGame() {
     return (
       <DefeatScreen
         message={gameState.defeatMessage || 'Game over!'}
+        onPlayAgain={handlePlayAgain}
+      />
+    )
+  }
+
+  // Wrong city screen
+  if (gameState.gamePhase === 'wrongCity') {
+    return (
+      <WrongCity
+        wrongCityName={gameState.wrongCityName || 'Unknown'}
+        deadEndMessage={gameState.deadEndMessage || "The trail has gone cold here."}
+        hoursRemaining={gameState.hoursRemaining}
+        onFlyBack={flyBack}
       />
     )
   }

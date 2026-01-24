@@ -13,7 +13,8 @@ export type ServerMessage =
   | { type: 'vote-update'; votesReceived: number; totalPlayers: number }
   | { type: 'vote-result'; winner: string; allVotes: Record<string, string>; gameState: Partial<GameState>; wasTiebreaker?: boolean; tiebreakerPlayerName?: string }
   | { type: 'search-result'; clue: CollectedClue | null; gameState: Partial<GameState> }
-  | { type: 'travel-result'; success: boolean; message: string; timeSpent: number; gameState: Partial<GameState> }
+  | { type: 'travel-result'; success: boolean; message: string; timeSpent: number; gameState: Partial<GameState>; wrongCity?: boolean }
+  | { type: 'fly-back-result'; success: boolean; message: string; timeSpent: number; gameState: Partial<GameState> }
   | { type: 'pilot-result'; identified: boolean; message: string; possibleMatches?: string[]; gameState: Partial<GameState> }
   | { type: 'game-state'; gameState: Partial<GameState> | null }
   | { type: 'destination-options'; options: string[] }
@@ -47,19 +48,29 @@ interface CurrentCompany {
   stolenAsset: string
 }
 
+export interface DestinationOption {
+  name: string
+  city: string
+  state: string
+}
+
 export interface GameState {
   currentCityIndex: number
   hoursRemaining: number
   cluesCollected: CollectedClue[]
+  currentCityClues?: CollectedClue[] // Filtered clues for current city display
   criminalIdentified: boolean
   criminalName: string | null
   fidelityMode: boolean
-  gamePhase: 'lobby' | 'intro' | 'searching' | 'voting' | 'traveling' | 'pilot' | 'victory' | 'defeat'
+  gamePhase: 'lobby' | 'intro' | 'searching' | 'voting' | 'traveling' | 'pilot' | 'victory' | 'defeat' | 'wrongCity'
   currentCompany: CurrentCompany
   availableLocations: SearchLocation[]
   searchedLocations: string[]
   totalCities: number
   destinationOptions?: string[] // Pre-set travel options (always 4)
+  destinationOptionsWithCities?: DestinationOption[] // Travel options with city info
+  wrongCityName?: string // Name of wrong city if player traveled to wrong destination
+  deadEndMessage?: string // Message to show when in wrong city
   victoryMessage?: string
   defeatMessage?: string
   robertaQuote?: string
@@ -94,6 +105,7 @@ interface PartyKitContextType {
   submitVote: (vote: string) => void
   searchLocation: (locationId: string) => void
   travel: (destination: string) => void
+  flyBack: () => void
   submitToPilot: () => void
   startVote: (prompt: string, options: string[], votingType: VotingState['votingType']) => void
   clearError: () => void
@@ -237,6 +249,10 @@ export function PartyKitProvider({ children }: { children: ReactNode }) {
         setGameState(message.gameState as GameState)
         break
 
+      case 'fly-back-result':
+        setGameState(message.gameState as GameState)
+        break
+
       case 'pilot-result':
         setGameState(message.gameState as GameState)
         break
@@ -298,6 +314,10 @@ export function PartyKitProvider({ children }: { children: ReactNode }) {
     send({ type: 'travel', destination })
   }, [send])
 
+  const flyBack = useCallback(() => {
+    send({ type: 'fly-back' })
+  }, [send])
+
   const submitToPilot = useCallback(() => {
     send({ type: 'submit-to-pilot' })
   }, [send])
@@ -325,6 +345,7 @@ export function PartyKitProvider({ children }: { children: ReactNode }) {
       submitVote,
       searchLocation,
       travel,
+      flyBack,
       submitToPilot,
       startVote,
       clearError
