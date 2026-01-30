@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="250" viewBox="0 0 200 250">
+  <defs>
+    <linearGradient id="suitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2a2a3a"/>
+      <stop offset="100%" style="stop-color:#1a1a2a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="200" height="250" fill="#16213e"/>
+
+  <!-- Body/Suit -->
+  <ellipse cx="100" cy="200" rx="70" ry="80" fill="url(#suitGrad)"/>
+
+  <!-- Collar -->
+  <polygon points="70,140 100,160 130,140 120,120 100,130 80,120" fill="#e94560"/>
+
+  <!-- Head -->
+  <ellipse cx="100" cy="80" rx="45" ry="55" fill="#ddb892"/>
+
+  <!-- Hair (slicked back corporate style) -->
+  <ellipse cx="100" cy="50" rx="48" ry="35" fill="#333"/>
+  <ellipse cx="100" cy="40" rx="40" ry="25" fill="#333"/>
+
+  <!-- Eyes (menacing) -->
+  <ellipse cx="80" cy="80" rx="10" ry="6" fill="white"/>
+  <ellipse cx="120" cy="80" rx="10" ry="6" fill="white"/>
+  <circle cx="82" cy="80" r="4" fill="#1a1a2e"/>
+  <circle cx="122" cy="80" r="4" fill="#1a1a2e"/>
+
+  <!-- Eyebrows (raised, villainous) -->
+  <path d="M65,70 Q80,62 95,70" stroke="#333" stroke-width="3" fill="none"/>
+  <path d="M105,70 Q120,62 135,70" stroke="#333" stroke-width="3" fill="none"/>
+
+  <!-- Smirk -->
+  <path d="M80,105 Q100,120 120,105" stroke="#8b4513" stroke-width="2" fill="none"/>
+  <path d="M110,103 L125,98" stroke="#8b4513" stroke-width="2" fill="none"/>
+
+  <!-- Evil gleam -->
+  <circle cx="75" cy="78" r="2" fill="white" opacity="0.8"/>
+  <circle cx="115" cy="78" r="2" fill="white" opacity="0.8"/>
+
+  <!-- Name plate -->
+  <rect x="50" y="220" width="100" height="25" fill="#e94560" rx="3"/>
+  <text x="100" y="238" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white" text-anchor="middle">ROBERTA BARON</text>
+</svg>
