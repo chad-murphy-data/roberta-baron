@@ -1,4 +1,5 @@
-import { Player } from '../context/PartyKitContext'
+import { useState } from 'react'
+import { Player, usePartyKit } from '../context/PartyKitContext'
 
 interface PopularityMatchup {
   id: string
@@ -29,8 +30,17 @@ interface PopularityHostProps {
 }
 
 export default function PopularityHost({ popularityState, players }: PopularityHostProps) {
+  const { submitPopularityVote } = usePartyKit()
+  const [hasVoted, setHasVoted] = useState(false)
+
   const { matchup, phase, votes, timeRemaining, results } = popularityState
   const votedPlayerIds = new Set(votes.map(v => v.playerId))
+
+  const handleVote = (choice: 'A' | 'B') => {
+    if (hasVoted) return
+    setHasVoted(true)
+    submitPopularityVote(choice)
+  }
 
   // Voting phase
   if (phase === 'voting') {
@@ -125,6 +135,53 @@ export default function PopularityHost({ popularityState, players }: PopularityH
             {timeRemaining}s
           </div>
 
+          {/* Host voting buttons */}
+          {!hasVoted && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '24px',
+              marginBottom: '24px'
+            }}>
+              <button
+                className="btn btn-large"
+                onClick={() => handleVote('A')}
+                style={{
+                  padding: '16px 48px',
+                  fontSize: '1.25rem',
+                  background: 'var(--card-bg)',
+                  border: '2px solid var(--accent)',
+                  cursor: 'pointer'
+                }}
+              >
+                A: {matchup.optionA.name}
+              </button>
+              <button
+                className="btn btn-large"
+                onClick={() => handleVote('B')}
+                style={{
+                  padding: '16px 48px',
+                  fontSize: '1.25rem',
+                  background: 'var(--card-bg)',
+                  border: '2px solid var(--accent)',
+                  cursor: 'pointer'
+                }}
+              >
+                B: {matchup.optionB.name}
+              </button>
+            </div>
+          )}
+
+          {hasVoted && (
+            <div style={{
+              textAlign: 'center',
+              marginBottom: '24px',
+              color: 'var(--success)'
+            }}>
+              ✓ Vote submitted!
+            </div>
+          )}
+
           <div style={{
             display: 'flex',
             justifyContent: 'center',
@@ -132,19 +189,19 @@ export default function PopularityHost({ popularityState, players }: PopularityH
             flexWrap: 'wrap'
           }}>
             {players.map(player => {
-              const hasVoted = votedPlayerIds.has(player.id)
+              const playerHasVoted = votedPlayerIds.has(player.id)
               return (
                 <div
                   key={player.id}
                   className="player-badge"
                   style={{
-                    borderColor: hasVoted ? 'var(--success)' : 'var(--border)',
-                    background: hasVoted ? 'rgba(74, 222, 128, 0.1)' : 'var(--card-bg)'
+                    borderColor: playerHasVoted ? 'var(--success)' : 'var(--border)',
+                    background: playerHasVoted ? 'rgba(74, 222, 128, 0.1)' : 'var(--card-bg)'
                   }}
                 >
-                  {hasVoted && <span style={{ color: 'var(--success)' }}>✓</span>}
+                  {playerHasVoted && <span style={{ color: 'var(--success)' }}>✓</span>}
                   {player.name}
-                  {!hasVoted && <span style={{ color: 'var(--text-muted)' }}>...</span>}
+                  {!playerHasVoted && <span style={{ color: 'var(--text-muted)' }}>...</span>}
                 </div>
               )
             })}

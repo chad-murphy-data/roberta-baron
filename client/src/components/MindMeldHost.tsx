@@ -1,4 +1,5 @@
-import { MindMeldState, Player } from '../context/PartyKitContext'
+import { useState } from 'react'
+import { MindMeldState, Player, usePartyKit } from '../context/PartyKitContext'
 
 interface MindMeldHostProps {
   mindMeldState: MindMeldState
@@ -6,7 +7,24 @@ interface MindMeldHostProps {
 }
 
 export default function MindMeldHost({ mindMeldState, players }: MindMeldHostProps) {
+  const { submitMindMeld } = usePartyKit()
+  const [answers, setAnswers] = useState<[string, string, string]>(['', '', ''])
+  const [hasSubmitted, setHasSubmitted] = useState(false)
+
   const submittedPlayerIds = new Set(mindMeldState.submissions.map(s => s.playerId))
+
+  const handleAnswerChange = (index: number, value: string) => {
+    const newAnswers = [...answers] as [string, string, string]
+    newAnswers[index] = value
+    setAnswers(newAnswers)
+  }
+
+  const handleSubmit = () => {
+    if (hasSubmitted) return
+    const validAnswers = answers.filter(a => a.trim().length > 0)
+    submitMindMeld(validAnswers.length > 0 ? validAnswers : [])
+    setHasSubmitted(true)
+  }
 
   // Input/Waiting phase - show who has submitted
   if (mindMeldState.phase === 'input' || mindMeldState.phase === 'waiting') {
@@ -38,6 +56,48 @@ export default function MindMeldHost({ mindMeldState, players }: MindMeldHostPro
             </div>
           </div>
 
+          {/* Host input form */}
+          {!hasSubmitted && (
+            <div className="card" style={{ marginBottom: '24px', maxWidth: '400px', margin: '0 auto 24px' }}>
+              <h3 style={{ color: 'var(--text-muted)', marginBottom: '16px', textAlign: 'center', fontSize: '0.875rem' }}>
+                Your Answers:
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+                {[0, 1, 2].map(index => (
+                  <input
+                    key={index}
+                    type="text"
+                    value={answers[index]}
+                    onChange={(e) => handleAnswerChange(index, e.target.value)}
+                    placeholder={`Answer ${index + 1}`}
+                    style={{
+                      padding: '12px',
+                      fontSize: '1rem',
+                      textAlign: 'center'
+                    }}
+                    maxLength={50}
+                    autoComplete="off"
+                    autoCapitalize="off"
+                  />
+                ))}
+              </div>
+              <button
+                className="btn btn-primary"
+                onClick={handleSubmit}
+                style={{ width: '100%' }}
+                disabled={answers.every(a => a.trim() === '')}
+              >
+                Submit Answers
+              </button>
+            </div>
+          )}
+
+          {hasSubmitted && (
+            <div style={{ textAlign: 'center', marginBottom: '24px', color: 'var(--success)' }}>
+              ✓ Your answers submitted!
+            </div>
+          )}
+
           <div style={{
             display: 'flex',
             justifyContent: 'center',
@@ -46,19 +106,19 @@ export default function MindMeldHost({ mindMeldState, players }: MindMeldHostPro
             marginBottom: '24px'
           }}>
             {players.map(player => {
-              const hasSubmitted = submittedPlayerIds.has(player.id)
+              const playerHasSubmitted = submittedPlayerIds.has(player.id)
               return (
                 <div
                   key={player.id}
                   className="player-badge"
                   style={{
-                    borderColor: hasSubmitted ? 'var(--success)' : 'var(--border)',
-                    background: hasSubmitted ? 'rgba(74, 222, 128, 0.1)' : 'var(--card-bg)'
+                    borderColor: playerHasSubmitted ? 'var(--success)' : 'var(--border)',
+                    background: playerHasSubmitted ? 'rgba(74, 222, 128, 0.1)' : 'var(--card-bg)'
                   }}
                 >
-                  {hasSubmitted && <span style={{ color: 'var(--success)' }}>✓</span>}
+                  {playerHasSubmitted && <span style={{ color: 'var(--success)' }}>✓</span>}
                   {player.name}
-                  {!hasSubmitted && <span style={{ color: 'var(--text-muted)' }}>...</span>}
+                  {!playerHasSubmitted && <span style={{ color: 'var(--text-muted)' }}>...</span>}
                 </div>
               )
             })}

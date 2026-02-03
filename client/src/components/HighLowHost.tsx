@@ -1,4 +1,5 @@
-import { Player } from '../context/PartyKitContext'
+import { useState } from 'react'
+import { Player, usePartyKit } from '../context/PartyKitContext'
 
 interface Card {
   rank: number
@@ -68,6 +69,10 @@ function CardDisplay({ card, isWinner, isLoser, size = 'large' }: {
 }
 
 export default function HighLowHost({ highLowState, players }: HighLowHostProps) {
+  const { submitHighLowVote, submitHighLowContinue } = usePartyKit()
+  const [hasVoted, setHasVoted] = useState(false)
+  const [hasContinueVoted, setHasContinueVoted] = useState(false)
+
   const {
     phase,
     currentCard,
@@ -84,6 +89,18 @@ export default function HighLowHost({ highLowState, players }: HighLowHostProps)
 
   const votedPlayerIds = new Set(votes.map(v => v.playerId))
   const continueVotedPlayerIds = new Set(continueVotes.map(v => v.playerId))
+
+  const handleVote = (choice: 'higher' | 'lower') => {
+    if (hasVoted) return
+    setHasVoted(true)
+    submitHighLowVote(choice)
+  }
+
+  const handleContinueVote = (choice: 'continue' | 'cash_out') => {
+    if (hasContinueVoted) return
+    setHasContinueVoted(true)
+    submitHighLowContinue(choice)
+  }
 
   // Voting phase - Higher or Lower
   if (phase === 'voting') {
@@ -153,6 +170,53 @@ export default function HighLowHost({ highLowState, players }: HighLowHostProps)
                style={{ justifyContent: 'center', fontSize: '2rem', marginBottom: '24px' }}>
             {timeRemaining}s
           </div>
+
+          {/* Host voting buttons */}
+          {!hasVoted && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '24px',
+              marginBottom: '24px'
+            }}>
+              <button
+                className="btn btn-large"
+                onClick={() => handleVote('higher')}
+                style={{
+                  padding: '16px 48px',
+                  fontSize: '1.25rem',
+                  background: 'var(--card-bg)',
+                  border: '2px solid var(--border)',
+                  cursor: 'pointer'
+                }}
+              >
+                ↑ HIGHER
+              </button>
+              <button
+                className="btn btn-large"
+                onClick={() => handleVote('lower')}
+                style={{
+                  padding: '16px 48px',
+                  fontSize: '1.25rem',
+                  background: 'var(--card-bg)',
+                  border: '2px solid var(--border)',
+                  cursor: 'pointer'
+                }}
+              >
+                ↓ LOWER
+              </button>
+            </div>
+          )}
+
+          {hasVoted && (
+            <div style={{
+              textAlign: 'center',
+              marginBottom: '24px',
+              color: 'var(--success)'
+            }}>
+              ✓ Vote submitted!
+            </div>
+          )}
 
           {/* Vote tally */}
           {votes.length > 0 && (
@@ -348,6 +412,55 @@ export default function HighLowHost({ highLowState, players }: HighLowHostProps)
                style={{ justifyContent: 'center', fontSize: '2rem', marginBottom: '24px' }}>
             {timeRemaining}s
           </div>
+
+          {/* Host continue voting buttons */}
+          {!hasContinueVoted && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '24px',
+              marginBottom: '24px'
+            }}>
+              <button
+                className="btn btn-large"
+                onClick={() => handleContinueVote('continue')}
+                style={{
+                  padding: '16px 32px',
+                  fontSize: '1.1rem',
+                  background: 'rgba(74, 222, 128, 0.1)',
+                  border: '2px solid var(--success)',
+                  color: 'var(--success)',
+                  cursor: 'pointer'
+                }}
+              >
+                KEEP GOING
+              </button>
+              <button
+                className="btn btn-large"
+                onClick={() => handleContinueVote('cash_out')}
+                style={{
+                  padding: '16px 32px',
+                  fontSize: '1.1rem',
+                  background: 'rgba(255, 215, 0, 0.1)',
+                  border: '2px solid var(--gold)',
+                  color: 'var(--gold)',
+                  cursor: 'pointer'
+                }}
+              >
+                CASH OUT
+              </button>
+            </div>
+          )}
+
+          {hasContinueVoted && (
+            <div style={{
+              textAlign: 'center',
+              marginBottom: '24px',
+              color: 'var(--success)'
+            }}>
+              ✓ Vote submitted!
+            </div>
+          )}
 
           {/* Vote tally */}
           <div style={{
