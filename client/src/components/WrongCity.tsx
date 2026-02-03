@@ -1,3 +1,6 @@
+import Pilot from './Pilot'
+import { CityImage } from '../utils/assets'
+
 interface WrongCityProps {
   wrongCityName: string
   deadEndMessage: string
@@ -7,20 +10,40 @@ interface WrongCityProps {
 
 export default function WrongCity({ wrongCityName, deadEndMessage, hoursRemaining, onFlyBack }: WrongCityProps) {
   return (
-    <div className="centered" style={{ background: 'linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%)' }}>
-      <div className="card" style={{ maxWidth: '600px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '2rem', marginBottom: '16px', color: 'var(--warning)' }}>
+    <div className="centered" style={{ background: 'linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%)', padding: '20px' }}>
+      <div style={{ maxWidth: '600px', textAlign: 'center' }}>
+        {/* Worried Pilot */}
+        <div className="pilot-worried">
+          <Pilot
+            pose="worried"
+            message={`Oh no! ${wrongCityName} is a dead end. We need to fly back!`}
+            typingSpeed={25}
+            size="medium"
+          />
+        </div>
+
+        <h1 style={{ fontSize: '2rem', marginTop: '24px', marginBottom: '16px', color: 'var(--warning)' }}>
           Wrong Destination!
         </h1>
 
-        <p style={{ fontSize: '1.25rem', marginBottom: '24px' }}>
-          You traveled to <span style={{ color: 'var(--gold)' }}>{wrongCityName}</span>
-        </p>
-
+        {/* City image */}
         <div style={{
-          background: 'rgba(0, 0, 0, 0.3)',
-          padding: '24px',
+          width: '200px',
+          height: '120px',
+          margin: '0 auto 24px',
           borderRadius: '8px',
+          overflow: 'hidden',
+          border: '2px solid var(--warning)',
+          opacity: 0.7
+        }}>
+          <CityImage
+            cityName={wrongCityName}
+            showOverlay={true}
+          />
+        </div>
+
+        <div className="card" style={{
+          background: 'rgba(0, 0, 0, 0.3)',
           marginBottom: '24px',
           fontStyle: 'italic'
         }}>
@@ -31,10 +54,6 @@ export default function WrongCity({ wrongCityName, deadEndMessage, hoursRemainin
 
         <p style={{ color: 'var(--error)', marginBottom: '24px' }}>
           Time wasted! You'll need to fly back.
-        </p>
-
-        <p style={{ color: 'var(--text-muted)', marginBottom: '16px', fontSize: '0.9rem' }}>
-          Flying back will cost another 4-5 hours...
         </p>
 
         <button

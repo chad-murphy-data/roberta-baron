@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { AssetImage, getRobertaBaronImage, CityImage } from '../utils/assets'
+import Pilot from './Pilot'
 
 interface CurrentCompany {
   name: string
@@ -30,23 +32,23 @@ export default function IntroScreen({ robertaQuote, firstCompany, onContinue }: 
     return (
       <div className="centered" style={{ padding: '40px' }}>
         <div style={{ maxWidth: '700px' }}>
-          <div style={{
-            width: '120px',
-            height: '120px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--accent) 0%, var(--gold) 100%)',
-            margin: '0 auto 32px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '3rem'
-          }}>
-            🕵️
+          {/* Wanted Poster style for Roberta */}
+          <div className="wanted-poster" style={{ maxWidth: '300px', margin: '0 auto 32px' }}>
+            <div style={{
+              width: '120px',
+              height: '150px',
+              margin: '0 auto',
+              overflow: 'hidden'
+            }}>
+              <AssetImage
+                src={getRobertaBaronImage()}
+                alt="Roberta Baron"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </div>
+            <h3>ROBERTA BARON</h3>
+            <p style={{ fontSize: '0.8rem', marginTop: '8px' }}>Corporate Espionage Mastermind</p>
           </div>
-
-          <h2 style={{ marginBottom: '24px', color: 'var(--accent)' }}>
-            ROBERTA BARON
-          </h2>
 
           <div className="card" style={{ textAlign: 'left' }}>
             <p style={{ fontStyle: 'italic', fontSize: '1.1rem', lineHeight: 1.6 }}>
@@ -62,6 +64,22 @@ export default function IntroScreen({ robertaQuote, firstCompany, onContinue }: 
     return (
       <div className="centered" style={{ padding: '40px' }}>
         <div style={{ maxWidth: '700px' }}>
+          <div style={{
+            width: '200px',
+            height: '120px',
+            margin: '0 auto 24px',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            border: '2px solid var(--border)'
+          }}>
+            <CityImage
+              cityName={firstCompany.city}
+              companyName={firstCompany.name}
+              alt={`${firstCompany.city}, ${firstCompany.state}`}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </div>
+
           <div style={{
             background: 'var(--accent)',
             color: 'white',
@@ -97,6 +115,7 @@ export default function IntroScreen({ robertaQuote, firstCompany, onContinue }: 
     )
   }
 
+  // Mission briefing with Pilot
   return (
     <div className="centered" style={{ padding: '40px' }}>
       <div style={{ maxWidth: '700px' }}>
@@ -104,14 +123,16 @@ export default function IntroScreen({ robertaQuote, firstCompany, onContinue }: 
           YOUR MISSION
         </h1>
 
-        <div className="card" style={{ marginBottom: '32px' }}>
-          <p style={{ fontSize: '1.1rem', lineHeight: 1.6, marginBottom: '16px' }}>
-            Track down the operative responsible for stealing{' '}
-            <strong style={{ color: 'var(--accent) ' }}>"{firstCompany.stolenAsset}"</strong>{' '}
-            from {firstCompany.name}.
-          </p>
+        <Pilot
+          pose="pointing"
+          message={`We've got a case! Someone stole "${firstCompany.stolenAsset}" from ${firstCompany.name}. You have 39 hours to track down the operative and make the arrest!`}
+          typingSpeed={20}
+          size="medium"
+        />
+
+        <div className="card" style={{ marginTop: '24px', marginBottom: '32px' }}>
           <p style={{ fontSize: '1.1rem', lineHeight: 1.6 }}>
-            You have <strong style={{ color: 'var(--gold)' }}>39 hours</strong> to:
+            Your objectives:
           </p>
           <ul style={{ marginTop: '16px', marginLeft: '24px', lineHeight: 2 }}>
             <li>Search locations for clues</li>

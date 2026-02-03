@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250" viewBox="0 0 400 250">
+  <rect width="400" height="250" fill="#1a1a2e"/>
+  <!-- Simplified USA outline -->
+  <path d="M50,80 L80,60 L120,55 L160,50 L200,45 L240,50 L280,55 L320,60 L350,80 L360,100 L365,130 L360,160 L340,180 L300,190 L260,195 L220,200 L180,200 L140,195 L100,185 L70,170 L50,150 L45,120 L50,80 Z"
+        fill="#2a2a3e" stroke="#444" stroke-width="2"/>
+  <!-- Grid dots for cities -->
+  <circle cx="100" cy="120" r="4" fill="#e94560" opacity="0.5"/>
+  <circle cx="150" cy="100" r="4" fill="#e94560" opacity="0.5"/>
+  <circle cx="200" cy="130" r="4" fill="#e94560" opacity="0.5"/>
+  <circle cx="280" cy="90" r="4" fill="#e94560" opacity="0.5"/>
+  <circle cx="320" cy="140" r="4" fill="#e94560" opacity="0.5"/>
+</svg>

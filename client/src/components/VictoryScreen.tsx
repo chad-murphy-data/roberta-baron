@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { AssetImage, getCriminalImage } from '../utils/assets'
+import Pilot from './Pilot'
 
 interface VictoryScreenProps {
   message: string
@@ -8,6 +10,7 @@ interface VictoryScreenProps {
 
 export default function VictoryScreen({ message, criminalName, onPlayAgain }: VictoryScreenProps) {
   const [confetti, setConfetti] = useState<Array<{ id: number; left: number; delay: number; color: string }>>([])
+  const [showStamp, setShowStamp] = useState(false)
 
   useEffect(() => {
     // Generate confetti
@@ -19,6 +22,10 @@ export default function VictoryScreen({ message, criminalName, onPlayAgain }: Vi
       color: colors[Math.floor(Math.random() * colors.length)]
     }))
     setConfetti(newConfetti)
+
+    // Show apprehended stamp after a delay
+    const stampTimer = setTimeout(() => setShowStamp(true), 500)
+    return () => clearTimeout(stampTimer)
   }, [])
 
   return (
@@ -43,7 +50,15 @@ export default function VictoryScreen({ message, criminalName, onPlayAgain }: Vi
         padding: '40px',
         maxWidth: '600px'
       }}>
-        <div style={{ fontSize: '5rem', marginBottom: '24px' }}>🎉</div>
+        {/* Excited Pilot */}
+        <div style={{ marginBottom: '24px' }}>
+          <Pilot
+            pose="excited"
+            message="We did it! Case closed!"
+            typingSpeed={25}
+            size="small"
+          />
+        </div>
 
         <h1 className="pixel-font" style={{
           fontSize: '2rem',
@@ -55,32 +70,39 @@ export default function VictoryScreen({ message, criminalName, onPlayAgain }: Vi
 
         <div className="card" style={{
           background: 'rgba(0, 0, 0, 0.3)',
-          border: '2px solid var(--gold)'
+          border: '2px solid var(--gold)',
+          position: 'relative'
         }}>
           <div style={{
             width: '100px',
-            height: '100px',
-            borderRadius: '50%',
-            background: 'var(--accent)',
+            height: '130px',
             margin: '0 auto 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '2.5rem'
+            borderRadius: '8px',
+            overflow: 'hidden',
+            border: '3px solid var(--gold)',
+            position: 'relative'
           }}>
-            👮
+            <AssetImage
+              src={getCriminalImage(criminalName.toLowerCase().replace(/\s+/g, '-'))}
+              alt={criminalName}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
           </div>
 
           <h2 style={{ marginBottom: '16px' }}>{criminalName}</h2>
 
-          <p style={{ color: 'var(--success)', marginBottom: '24px' }}>
-            HAS BEEN APPREHENDED
-          </p>
+          {/* Apprehended stamp */}
+          {showStamp && (
+            <div className="apprehended-stamp">
+              APPREHENDED
+            </div>
+          )}
 
           <div style={{
             whiteSpace: 'pre-line',
             color: 'var(--text-muted)',
-            lineHeight: 1.8
+            lineHeight: 1.8,
+            marginTop: showStamp ? '40px' : '0'
           }}>
             {message}
           </div>

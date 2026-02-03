@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Where in Corporate America is Roberta Baron? - A multiplayer deduction game for team building",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run dev:party\" \"npm run dev:client\"",
     "dev:party": "npx partykit dev",
@@ -10,11 +11,18 @@
     "build": "npm run build:client",
     "build:client": "cd client && npm run build",
     "deploy": "npx partykit deploy",
-    "install:all": "npm install && cd client && npm install"
+    "install:all": "npm install && cd client && npm install",
+    "host-mode": "npx tsx host-mode/cli.ts"
+  },
+  "dependencies": {
+    "open": "^10.1.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@types/ws": "^8.5.10",
     "concurrently": "^8.2.2",
-    "partykit": "^0.0.111",
+    "partykit": "^0.0.115",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   },
   "engines": {

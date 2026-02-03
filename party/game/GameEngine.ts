@@ -4,8 +4,12 @@ import {
   Brand,
   CollectedClue,
   DestinationClue,
+  LegacyDestinationClue,
+  FoundDestinationClue,
   Archetype,
-  LOCATIONS_BY_INDUSTRY
+  MiniGameType,
+  LOCATIONS_BY_INDUSTRY,
+  SearchLocation
 } from '../data/types';
 import { CRIMINALS, getRandomCriminal } from '../data/criminals';
 import { BRANDS, PUBLIC_BRANDS, getBrandById } from '../data/brands';
@@ -17,6 +21,12 @@ import {
   NEWS_HEADLINES,
   FIDELITY_NEWS_HEADLINES
 } from '../data/clues';
+import {
+  CLUES_BY_COMPANY_ID,
+  getRandomClue as getDestinationClueByStrength,
+  ALL_DESTINATION_CLUES
+} from '../data/destinationClues';
+import { DestinationClueSet } from '../data/types';
 
 export class GameEngine {
   private gameState: GameState;
@@ -53,6 +63,7 @@ export class GameEngine {
       customVillain,
       searchedLocations: [],
       gamePhase: 'lobby',
+      miniGamesPlayed: [],
       validCriminalClues: validClues,
       validDestinationClues: destinationClues,
       travelOptions
@@ -106,8 +117,9 @@ export class GameEngine {
     return selectedCombo;
   }
 
-  private generateDestinationCluesForPath(companies: Brand[]): DestinationClue[][] {
+  private generateDestinationCluesForPath(companies: Brand[]): LegacyDestinationClue[][] {
     // Generate clues for destinations 2-5 (first city is given)
+    // This is the legacy system, used as fallback when new clue bank doesn't have a company
     return companies.slice(1).map(company => generateDestinationClues(company));
   }
 
@@ -218,6 +230,27 @@ export class GameEngine {
     this.gameState.gamePhase = 'searching';
   }
 
+  setGamePhase(phase: GameState['gamePhase']): void {
+    this.gameState.gamePhase = phase;
+  }
+
+  addTime(hours: number): void {
+    this.gameState.hoursRemaining += hours;
+  }
+
+  // Mini-game tracking
+  recordMiniGamePlayed(game: MiniGameType): void {
+    this.gameState.miniGamesPlayed.push(game);
+  }
+
+  getMiniGamesPlayed(): MiniGameType[] {
+    return this.gameState.miniGamesPlayed || [];
+  }
+
+  setActiveMiniGame(game: MiniGameType | undefined): void {
+    this.gameState.activeMiniGame = game;
+  }
+
   getCurrentCompany(): Brand {
     return this.gameState.companies[this.gameState.currentCityIndex];
   }
@@ -238,8 +271,14 @@ export class GameEngine {
       return null;
     }
 
-    // Deduct time
-    this.gameState.hoursRemaining -= 1;
+    // Get the location to check if it's a gimme (costs 2 hours)
+    const currentCompany = this.gameState.companies[currentIndex];
+    const locations = LOCATIONS_BY_INDUSTRY[currentCompany.industry];
+    const location = locations?.find(l => l.id === locationId);
+    const isGimme = location?.isGimme || false;
+
+    // Deduct time - gimme locations cost 2 hours
+    this.gameState.hoursRemaining -= isGimme ? 2 : 1;
     this.gameState.searchedLocations.push(searchKey);
 
     // Determine what type of clue to give
@@ -252,9 +291,44 @@ export class GameEngine {
     return clue;
   }
 
+  // Search that returns ALL clues found (for asymmetric distribution)
+  // Does NOT add clues to collected - that happens when players share
+  searchWithMultipleClues(locationId: string): CollectedClue[] {
+    const currentIndex = this.gameState.currentCityIndex;
+    const searchKey = `${currentIndex}-${locationId}`;
+
+    // Check if already searched this location
+    if (this.gameState.searchedLocations.includes(searchKey)) {
+      return [];
+    }
+
+    // Get the location to check if it's a gimme (costs 2 hours)
+    const currentCompany = this.gameState.companies[currentIndex];
+    const locations = LOCATIONS_BY_INDUSTRY[currentCompany.industry];
+    const location = locations?.find(l => l.id === locationId);
+    const isGimme = location?.isGimme || false;
+
+    // Deduct time - gimme locations cost 2 hours
+    this.gameState.hoursRemaining -= isGimme ? 2 : 1;
+    this.gameState.searchedLocations.push(searchKey);
+
+    // Generate all clues for this search
+    return this.generateAllCluesForSearch(currentIndex, locationId);
+  }
+
+  // Add a clue that was shared by a player (for asymmetric distribution)
+  addSharedClue(clue: CollectedClue): void {
+    this.gameState.cluesCollected.push(clue);
+  }
+
   private generateClueForSearch(cityIndex: number, locationId: string): CollectedClue | null {
     const currentCompany = this.gameState.companies[cityIndex];
     const cityKey = `${currentCompany.city}, ${currentCompany.state}`;
+
+    // Get the location to determine clue strength
+    const locations = LOCATIONS_BY_INDUSTRY[currentCompany.industry];
+    const location = locations?.find(l => l.id === locationId);
+    const clueStrength = location?.clueStrength || 'weak';
 
     // Check if we've already given a criminal clue at this city
     const criminalCluesThisCity = this.gameState.cluesCollected.filter(
@@ -286,31 +360,49 @@ export class GameEngine {
         clues.push({
           type: 'criminal',
           text,
-          cityFound: cityKey
+          cityFound: cityKey,
+          criminalClueId: clueId,
+          archetypes: clue.archetypes
         });
       }
     }
 
-    // Always give a destination clue (if not final city)
-    // This ensures players always know where to go next
+    // Give a destination clue (if not final city)
+    // Use the new strength-based clue system from destination clue bank
     if (cityIndex < this.gameState.companies.length - 1) {
-      const destClues = this.gameState.validDestinationClues[cityIndex];
-      if (destClues && destClues.length > 0) {
-        // Pick a clue based on how many we've given
-        const destCluesGivenThisCity = this.gameState.cluesCollected.filter(
-          c => c.type === 'destination' && c.cityFound === cityKey
-        ).length;
+      const nextCompany = this.gameState.companies[cityIndex + 1];
+      const clueSet = CLUES_BY_COMPANY_ID[nextCompany.id];
 
-        // Prioritize certain clue types for narrowing
-        const priorityOrder = ['region', 'industry', 'subIndustry', 'cityHint', 'era', 'unique'];
-        const clueType = priorityOrder[destCluesGivenThisCity % priorityOrder.length];
-        const clue = destClues.find(c => c.type === clueType) || destClues[0];
+      if (clueSet) {
+        // Get clue based on location strength
+        const destClue = getDestinationClueByStrength(nextCompany.id, clueStrength);
 
-        clues.push({
-          type: 'destination',
-          text: clue.text,
-          cityFound: cityKey
-        });
+        if (destClue) {
+          clues.push({
+            type: 'destination',
+            text: destClue.text,
+            cityFound: cityKey,
+            // Store the full clue data for auto-narrowing
+            destinationClue: destClue
+          });
+        }
+      } else {
+        // Fallback to legacy system if no clue set exists for this company
+        const destClues = this.gameState.validDestinationClues[cityIndex];
+        if (destClues && destClues.length > 0) {
+          const destCluesGivenThisCity = this.gameState.cluesCollected.filter(
+            c => c.type === 'destination' && c.cityFound === cityKey
+          ).length;
+          const priorityOrder = ['region', 'industry', 'subIndustry', 'cityHint', 'era', 'unique'];
+          const clueType = priorityOrder[destCluesGivenThisCity % priorityOrder.length];
+          const clue = destClues.find((c: LegacyDestinationClue) => c.type === clueType) || destClues[0];
+
+          clues.push({
+            type: 'destination',
+            text: clue.text,
+            cityFound: cityKey
+          });
+        }
       }
     }
 
@@ -328,6 +420,95 @@ export class GameEngine {
     }
 
     return null;
+  }
+
+  // Generate ALL clues for a search (for asymmetric distribution)
+  // Does NOT add to cluesCollected - caller handles that
+  private generateAllCluesForSearch(cityIndex: number, locationId: string): CollectedClue[] {
+    const currentCompany = this.gameState.companies[cityIndex];
+    const cityKey = `${currentCompany.city}, ${currentCompany.state}`;
+
+    // Get the location to determine clue strength
+    const locations = LOCATIONS_BY_INDUSTRY[currentCompany.industry];
+    const location = locations?.find(l => l.id === locationId);
+    const clueStrength = location?.clueStrength || 'weak';
+
+    // Check if we've already given a criminal clue at this city
+    const criminalCluesThisCity = this.gameState.cluesCollected.filter(
+      c => c.type === 'criminal' && c.cityFound === cityKey
+    ).length;
+
+    // Count total criminal clues collected across all cities
+    const totalCriminalClues = this.gameState.cluesCollected.filter(
+      c => c.type === 'criminal'
+    ).length;
+
+    const clues: CollectedClue[] = [];
+
+    // Determine if this location should give a criminal clue
+    // Rule: Max 1 criminal clue per city, only first 3 cities, max 3 total
+    const shouldGiveCriminalClue =
+      cityIndex < 3 &&
+      criminalCluesThisCity === 0 &&
+      totalCriminalClues < 3 &&
+      this.shouldLocationGiveCriminalClue(cityIndex, locationId);
+
+    if (shouldGiveCriminalClue) {
+      const clueId = this.gameState.validCriminalClues[totalCriminalClues];
+      const clue = getClueById(clueId);
+      if (clue) {
+        const text = this.gameState.criminal.gender === 'M'
+          ? clue.textMale
+          : clue.textFemale;
+        clues.push({
+          type: 'criminal',
+          text,
+          cityFound: cityKey,
+          criminalClueId: clueId,
+          archetypes: clue.archetypes
+        });
+      }
+    }
+
+    // Give a destination clue (if not final city)
+    // Use the new strength-based clue system
+    if (cityIndex < this.gameState.companies.length - 1) {
+      const nextCompany = this.gameState.companies[cityIndex + 1];
+      const clueSet = CLUES_BY_COMPANY_ID[nextCompany.id];
+
+      if (clueSet) {
+        // Get clue based on location strength
+        const destClue = getDestinationClueByStrength(nextCompany.id, clueStrength);
+
+        if (destClue) {
+          clues.push({
+            type: 'destination',
+            text: destClue.text,
+            cityFound: cityKey,
+            destinationClue: destClue
+          });
+        }
+      } else {
+        // Fallback to legacy system
+        const destClues = this.gameState.validDestinationClues[cityIndex];
+        if (destClues && destClues.length > 0) {
+          const destCluesGivenThisCity = this.gameState.cluesCollected.filter(
+            c => c.type === 'destination' && c.cityFound === cityKey
+          ).length;
+          const priorityOrder = ['region', 'industry', 'subIndustry', 'cityHint', 'era', 'unique'];
+          const clueType = priorityOrder[destCluesGivenThisCity % priorityOrder.length];
+          const clue = destClues.find((c: LegacyDestinationClue) => c.type === clueType) || destClues[0];
+
+          clues.push({
+            type: 'destination',
+            text: clue.text,
+            cityFound: cityKey
+          });
+        }
+      }
+    }
+
+    return clues;
   }
 
   // Determine if a specific location should give the criminal clue for this city
@@ -546,6 +727,166 @@ export class GameEngine {
     return [correctOption, ...decoys].sort(() => Math.random() - 0.5);
   }
 
+  /**
+   * Get destination options filtered by collected clues
+   * Returns options with their elimination status
+   */
+  getFilteredDestinationOptions(): {
+    options: Array<{
+      name: string;
+      city: string;
+      state: string;
+      eliminated: boolean;
+      eliminatedBy?: string[];
+    }>;
+    recommendation: string | null;
+  } {
+    const allOptions = this.getDestinationOptions();
+    const currentIndex = this.gameState.currentCityIndex;
+    const currentCompany = this.gameState.companies[currentIndex];
+    const currentCityKey = `${currentCompany.city}, ${currentCompany.state}`;
+
+    // Get destination clues collected at current city that have full clue data
+    const destCluesThisCity = this.gameState.cluesCollected.filter(
+      c => c.type === 'destination' &&
+           c.cityFound === currentCityKey &&
+           c.destinationClue
+    );
+
+    const optionStatuses = allOptions.map(optionName => {
+      const brand = PUBLIC_BRANDS.find(b => b.name === optionName);
+      if (!brand) {
+        return { name: optionName, city: '', state: '', eliminated: false };
+      }
+
+      let eliminated = false;
+      const eliminatedBy: string[] = [];
+
+      // Check each clue against this option
+      for (const collectedClue of destCluesThisCity) {
+        const clue = collectedClue.destinationClue;
+        if (!clue) continue;
+
+        let matchesClue = false;
+        let excludedByClue = false;
+
+        // Check if option is excluded by the clue
+        if (clue.excludesRegion?.includes(brand.region)) {
+          excludedByClue = true;
+        }
+        if (clue.excludesState?.includes(brand.state)) {
+          excludedByClue = true;
+        }
+        if (clue.excludesIndustry?.includes(brand.industry)) {
+          excludedByClue = true;
+        }
+
+        // Check if option matches the clue criteria
+        if (clue.matchesRegion?.includes(brand.region)) {
+          matchesClue = true;
+        }
+        if (clue.matchesState?.includes(brand.state)) {
+          matchesClue = true;
+        }
+        if (clue.matchesCity?.includes(brand.city)) {
+          matchesClue = true;
+        }
+        if (clue.matchesIndustry?.includes(brand.industry)) {
+          matchesClue = true;
+        }
+        if (clue.matchesSubIndustry?.includes(brand.subIndustry)) {
+          matchesClue = true;
+        }
+        if (clue.matchesCompanyId?.includes(brand.id)) {
+          matchesClue = true;
+        }
+
+        // If clue has match criteria and this option doesn't match any,
+        // and the option is also excluded, eliminate it
+        if (excludedByClue) {
+          eliminated = true;
+          eliminatedBy.push(collectedClue.text);
+        }
+
+        // If clue has explicit match criteria (not just exclusions),
+        // options that don't match any criteria are candidates for elimination
+        // BUT only if there are no exclusion criteria or option matches exclusion
+        const hasMatchCriteria =
+          clue.matchesRegion ||
+          clue.matchesState ||
+          clue.matchesCity ||
+          clue.matchesIndustry ||
+          clue.matchesSubIndustry ||
+          clue.matchesCompanyId;
+
+        if (hasMatchCriteria && !matchesClue && !excludedByClue) {
+          // This option doesn't match, mark as eliminated
+          eliminated = true;
+          eliminatedBy.push(collectedClue.text);
+        }
+      }
+
+      return {
+        name: optionName,
+        city: brand.city,
+        state: brand.state,
+        eliminated,
+        eliminatedBy: eliminatedBy.length > 0 ? eliminatedBy : undefined
+      };
+    });
+
+    // If only one option remains, recommend it
+    const remaining = optionStatuses.filter(o => !o.eliminated);
+    const recommendation = remaining.length === 1 ? remaining[0].name : null;
+
+    return { options: optionStatuses, recommendation };
+  }
+
+  /**
+   * Get remaining suspects based on criminal clues collected
+   * Auto-eliminates based on archetype matching
+   */
+  getRemainingSuspects(): {
+    suspects: Criminal[];
+    identified: Criminal | null;
+    gender: 'M' | 'F';
+  } {
+    const criminalClues = this.gameState.cluesCollected.filter(c => c.type === 'criminal');
+    const criminalGender = this.gameState.criminal.gender;
+
+    // Start with all criminals of the correct gender
+    let remaining = CRIMINALS.filter(c => c.gender === criminalGender);
+
+    // For each criminal clue, narrow down based on archetypes
+    for (const collectedClue of criminalClues) {
+      if (collectedClue.archetypes && collectedClue.archetypes.length > 0) {
+        remaining = remaining.filter(c =>
+          collectedClue.archetypes!.includes(c.archetype)
+        );
+      } else if (collectedClue.criminalClueId !== undefined) {
+        // Look up the clue to get archetypes
+        const clue = getClueById(collectedClue.criminalClueId);
+        if (clue) {
+          remaining = remaining.filter(c => clue.archetypes.includes(c.archetype));
+        }
+      }
+    }
+
+    const identified = remaining.length === 1 ? remaining[0] : null;
+
+    // If we've narrowed to 1 suspect, mark criminal as identified
+    if (identified && identified.id === this.gameState.criminal.id) {
+      this.gameState.criminalIdentified = true;
+      this.gameState.criminalName = identified.name;
+    }
+
+    return {
+      suspects: remaining,
+      identified,
+      gender: criminalGender
+    };
+  }
+
   getRobertaQuote(): string {
     return ROBERTA_QUOTES[Math.floor(Math.random() * ROBERTA_QUOTES.length)];
   }
@@ -606,7 +947,7 @@ ${this.gameState.criminal.name} slipped away.
 Better luck next time.`;
   }
 
-  getPublicGameState(): Partial<GameState> & { destinationOptions?: string[]; destinationOptionsWithCities?: { name: string; city: string; state: string }[]; currentCityClues?: CollectedClue[]; deadEndMessage?: string } {
+  getPublicGameState(): PublicGameState {
     const state = this.getState();
     const currentCompany = this.getCurrentCompany();
     const currentCityKey = `${currentCompany.city}, ${currentCompany.state}`;
@@ -626,6 +967,12 @@ Better luck next time.`;
         state: brand?.state || ''
       };
     });
+
+    // Get filtered destination options based on clues (new system)
+    const filteredDestinations = this.getFilteredDestinationOptions();
+
+    // Get remaining suspects based on criminal clues (new system)
+    const suspectInfo = this.getRemainingSuspects();
 
     // Return a sanitized version without revealing the criminal identity
     return {
@@ -654,6 +1001,23 @@ Better luck next time.`;
       // Pre-set destination options for the current city (always exactly 4)
       destinationOptions,
       destinationOptionsWithCities,
+      // NEW: Filtered destination options with elimination status
+      filteredDestinations: filteredDestinations.options,
+      destinationRecommendation: filteredDestinations.recommendation,
+      // NEW: Remaining suspects based on clues
+      remainingSuspects: suspectInfo.suspects.map(s => ({
+        id: s.id,
+        name: s.name,
+        archetype: s.archetype,
+        description: s.description
+      })),
+      identifiedSuspect: suspectInfo.identified ? {
+        id: suspectInfo.identified.id,
+        name: suspectInfo.identified.name,
+        archetype: suspectInfo.identified.archetype,
+        description: suspectInfo.identified.description
+      } : null,
+      suspectGender: suspectInfo.gender,
       // Wrong city state
       wrongCityName: state.wrongCityName,
       deadEndMessage: state.gamePhase === 'wrongCity' ? this.getDeadEndMessage() : undefined,
@@ -664,6 +1028,58 @@ Better luck next time.`;
       robertaQuote: state.gamePhase === 'intro' ? this.getRobertaQuote() : undefined,
       // Criminal archetype description (only if identified)
       criminalDescription: state.criminalIdentified ? state.criminal.description : undefined
-    } as Partial<GameState> & { destinationOptions?: string[]; destinationOptionsWithCities?: { name: string; city: string; state: string }[]; currentCityClues?: CollectedClue[]; deadEndMessage?: string };
+    };
   }
+}
+
+// Type for the public game state
+export interface PublicGameState {
+  currentCityIndex: number;
+  hoursRemaining: number;
+  cluesCollected: CollectedClue[];
+  currentCityClues: CollectedClue[];
+  criminalIdentified: boolean;
+  criminalName: string | null;
+  fidelityMode: boolean;
+  customVillain?: GameState['customVillain'];
+  gamePhase: GameState['gamePhase'];
+  currentCompany: {
+    name: string;
+    city: string;
+    state: string;
+    industry: string;
+    stolenAsset: string;
+  };
+  availableLocations: SearchLocation[];
+  searchedLocations: string[];
+  totalCities: number;
+  destinationOptions: string[];
+  destinationOptionsWithCities: { name: string; city: string; state: string }[];
+  filteredDestinations: Array<{
+    name: string;
+    city: string;
+    state: string;
+    eliminated: boolean;
+    eliminatedBy?: string[];
+  }>;
+  destinationRecommendation: string | null;
+  remainingSuspects: Array<{
+    id: string;
+    name: string;
+    archetype: Archetype;
+    description: string;
+  }>;
+  identifiedSuspect: {
+    id: string;
+    name: string;
+    archetype: Archetype;
+    description: string;
+  } | null;
+  suspectGender: 'M' | 'F';
+  wrongCityName?: string;
+  deadEndMessage?: string;
+  victoryMessage?: string;
+  defeatMessage?: string;
+  robertaQuote?: string;
+  criminalDescription?: string;
 }

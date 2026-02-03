@@ -4,6 +4,9 @@ import { usePartyKit } from '../context/PartyKitContext'
 import PlayerLobby from '../components/PlayerLobby'
 import PlayerVoting from '../components/PlayerVoting'
 import PlayerClueView from '../components/PlayerClueView'
+import MindMeldInput from '../components/MindMeldInput'
+import PopularityInput from '../components/PopularityInput'
+import HighLowInput from '../components/HighLowInput'
 
 export default function PlayerGame() {
   const { roomCode: urlRoomCode } = useParams()
@@ -14,6 +17,9 @@ export default function PlayerGame() {
     players,
     gameState,
     votingState,
+    mindMeldState,
+    popularityState,
+    highLowState,
     submitVote,
     error
   } = usePartyKit()
@@ -131,6 +137,24 @@ export default function PlayerGame() {
         </div>
       </div>
     )
+  }
+
+  // Mini-games during travel
+  if (gameState.gamePhase === 'miniGame') {
+    // Mind Meld
+    if (gameState.activeMiniGame === 'mind_meld' && mindMeldState) {
+      return <MindMeldInput mindMeldState={mindMeldState} />
+    }
+
+    // Which is More Popular
+    if (gameState.activeMiniGame === 'popularity' && popularityState) {
+      return <PopularityInput popularityState={popularityState} />
+    }
+
+    // High-Low
+    if (gameState.activeMiniGame === 'high_low' && highLowState) {
+      return <HighLowInput highLowState={highLowState} />
+    }
   }
 
   // Voting mode

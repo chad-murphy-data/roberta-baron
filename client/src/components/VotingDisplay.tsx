@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { PilotInline } from './Pilot'
+import { PilotPose } from '../utils/assets'
 
 interface Player {
   id: string
@@ -48,9 +50,36 @@ export default function VotingDisplay({ votingState, players, isHost, onVote }: 
     }
   })
 
+  // Get appropriate Pilot pose based on state
+  const getPilotPose = (): PilotPose => {
+    if (votingState.winner) return 'excited'
+    if (votingState.timeRemaining <= 5) return 'worried'
+    if (votingState.votingType === 'travel') return 'pointing'
+    return 'hi'
+  }
+
+  const getPilotMessage = (): string => {
+    if (votingState.winner) {
+      return votingState.wasTiebreaker
+        ? `It's a tie! ${votingState.tiebreakerPlayerName || 'Someone'} gets to decide.`
+        : `The team has decided: ${votingState.winner}`
+    }
+    if (votingState.timeRemaining <= 5) return 'Hurry! Time is running out!'
+    return `${votesReceived}/${totalPlayers} votes in. Waiting for everyone...`
+  }
+
   return (
     <div className="container" style={{ maxWidth: '800px', margin: '0 auto' }}>
       <div className="card" style={{ textAlign: 'center', marginBottom: '32px' }}>
+        {/* Pilot status */}
+        <div style={{ marginBottom: '16px' }}>
+          <PilotInline
+            pose={getPilotPose()}
+            message={getPilotMessage()}
+            size={50}
+          />
+        </div>
+
         <h2 style={{ marginBottom: '16px', color: 'var(--gold)' }}>
           {votingState.prompt}
         </h2>

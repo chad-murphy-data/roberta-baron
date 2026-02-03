@@ -1,3 +1,6 @@
+import { AssetImage, getRobertaBaronImage } from '../utils/assets'
+import Pilot from './Pilot'
+
 interface DefeatScreenProps {
   message: string
   onPlayAgain?: () => void
@@ -11,7 +14,15 @@ export default function DefeatScreen({ message, onPlayAgain }: DefeatScreenProps
         padding: '40px',
         maxWidth: '600px'
       }}>
-        <div style={{ fontSize: '5rem', marginBottom: '24px' }}>😔</div>
+        {/* Worried Pilot */}
+        <div className="pilot-worried" style={{ marginBottom: '24px' }}>
+          <Pilot
+            pose="worried"
+            message="They got away... We'll get them next time."
+            typingSpeed={35}
+            size="small"
+          />
+        </div>
 
         <h1 className="pixel-font" style={{
           fontSize: '1.5rem',
@@ -51,14 +62,32 @@ export default function DefeatScreen({ message, onPlayAgain }: DefeatScreenProps
 
         <div className="card" style={{
           marginTop: '24px',
-          background: 'rgba(0, 0, 0, 0.2)'
+          background: 'rgba(0, 0, 0, 0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px'
         }}>
-          <p style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>
-            "Better luck next time. My operatives are everywhere."
-          </p>
-          <p style={{ marginTop: '8px', color: 'var(--accent)' }}>
-            - Roberta Baron
-          </p>
+          <div style={{
+            width: '60px',
+            height: '75px',
+            borderRadius: '4px',
+            overflow: 'hidden',
+            flexShrink: 0
+          }}>
+            <AssetImage
+              src={getRobertaBaronImage()}
+              alt="Roberta Baron"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <p style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>
+              "Better luck next time. My operatives are everywhere."
+            </p>
+            <p style={{ marginTop: '8px', color: 'var(--accent)' }}>
+              - Roberta Baron
+            </p>
+          </div>
         </div>
 
         <p style={{ marginTop: '32px', color: 'var(--text-muted)' }}>

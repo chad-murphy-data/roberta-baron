@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { usePartyKit } from '../context/PartyKitContext'
+import { useSounds } from '../hooks/useSounds'
 import Lobby from '../components/Lobby'
 import IntroScreen from '../components/IntroScreen'
 import GameBoard from '../components/GameBoard'
@@ -9,6 +10,9 @@ import VictoryScreen from '../components/VictoryScreen'
 import DefeatScreen from '../components/DefeatScreen'
 import WrongCity from '../components/WrongCity'
 import NewsTicker from '../components/NewsTicker'
+import MindMeldHost from '../components/MindMeldHost'
+import PopularityHost from '../components/PopularityHost'
+import HighLowHost from '../components/HighLowHost'
 
 export default function HostGame() {
   const { roomCode: urlRoomCode } = useParams()
@@ -20,6 +24,9 @@ export default function HostGame() {
     isHost,
     gameState,
     votingState,
+    mindMeldState,
+    popularityState,
+    highLowState,
     startGame,
     proceedFromIntro,
     searchLocation,
@@ -30,6 +37,38 @@ export default function HostGame() {
   } = usePartyKit()
 
   const [newsHeadline, setNewsHeadline] = useState<string>('')
+  const { play, toggle, enabled: soundEnabled } = useSounds()
+
+  // Track previous game state for sound triggers
+  const prevGamePhase = useRef(gameState?.gamePhase)
+  const prevVotingState = useRef(votingState)
+
+  // Play sounds based on game events
+  useEffect(() => {
+    if (!gameState) return
+
+    // Game phase changes
+    if (prevGamePhase.current !== gameState.gamePhase) {
+      if (gameState.gamePhase === 'victory') {
+        play('victory')
+      } else if (gameState.gamePhase === 'defeat') {
+        play('defeat')
+      } else if (gameState.gamePhase === 'wrongCity') {
+        play('wrong-city')
+      } else if (prevGamePhase.current === 'intro' && gameState.gamePhase === 'searching') {
+        play('game-start')
+      }
+      prevGamePhase.current = gameState.gamePhase
+    }
+  }, [gameState?.gamePhase, play])
+
+  // Vote result sounds
+  useEffect(() => {
+    if (votingState?.winner && !prevVotingState.current?.winner) {
+      play('vote-reveal')
+    }
+    prevVotingState.current = votingState
+  }, [votingState, play])
 
   // Redirect if not in the right room
   useEffect(() => {
@@ -128,6 +167,39 @@ export default function HostGame() {
     )
   }
 
+  // Mini-games during travel
+  if (gameState.gamePhase === 'miniGame') {
+    // Mind Meld
+    if (gameState.activeMiniGame === 'mind_meld' && mindMeldState) {
+      return (
+        <MindMeldHost
+          mindMeldState={mindMeldState}
+          players={players}
+        />
+      )
+    }
+
+    // Which is More Popular
+    if (gameState.activeMiniGame === 'popularity' && popularityState) {
+      return (
+        <PopularityHost
+          popularityState={popularityState}
+          players={players}
+        />
+      )
+    }
+
+    // High-Low
+    if (gameState.activeMiniGame === 'high_low' && highLowState) {
+      return (
+        <HighLowHost
+          highLowState={highLowState}
+          players={players}
+        />
+      )
+    }
+  }
+
   // Main game board
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -148,8 +220,25 @@ export default function HostGame() {
           </p>
         </div>
 
-        <div className={`timer ${gameState.hoursRemaining <= 10 ? 'danger' : gameState.hoursRemaining <= 20 ? 'warning' : ''}`}>
-          {gameState.hoursRemaining} hours remaining
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className={`timer ${gameState.hoursRemaining <= 10 ? 'danger' : gameState.hoursRemaining <= 20 ? 'warning' : ''}`}>
+            {gameState.hoursRemaining} hours remaining
+          </div>
+          <button
+            onClick={toggle}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--border)',
+              borderRadius: '8px',
+              padding: '8px 12px',
+              fontSize: '1.25rem',
+              cursor: 'pointer',
+              color: 'var(--text)'
+            }}
+            title={soundEnabled ? 'Mute sounds' : 'Unmute sounds'}
+          >
+            {soundEnabled ? '🔊' : '🔇'}
+          </button>
         </div>
       </header>
 

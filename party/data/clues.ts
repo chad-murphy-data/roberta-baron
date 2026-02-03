@@ -1,4 +1,4 @@
-import { CriminalClue, Archetype, DestinationClue, Brand } from './types';
+import { CriminalClue, Archetype, LegacyDestinationClue, Brand } from './types';
 
 // 3-Archetype Clues (create ambiguity)
 export const THREE_ARCHETYPE_CLUES: CriminalClue[] = [
@@ -287,8 +287,8 @@ export const VALID_CRIMINAL_COMBOS: Record<Archetype, number[][]> = {
 };
 
 // Destination clue generators
-export function generateDestinationClues(brand: Brand): DestinationClue[] {
-  const clues: DestinationClue[] = [];
+export function generateDestinationClues(brand: Brand): LegacyDestinationClue[] {
+  const clues: LegacyDestinationClue[] = [];
 
   // Region clue
   clues.push({

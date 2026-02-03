@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200">
+  <rect width="300" height="200" fill="#3a3a4a"/>
+  <!-- Office desk outline -->
+  <rect x="50" y="120" width="200" height="10" fill="#555" rx="2"/>
+  <rect x="60" y="130" width="8" height="50" fill="#555"/>
+  <rect x="232" y="130" width="8" height="50" fill="#555"/>
+  <!-- Monitor -->
+  <rect x="120" y="70" width="60" height="45" fill="#555" rx="3"/>
+  <rect x="145" y="115" width="10" height="10" fill="#555"/>
+  <!-- Chair back -->
+  <ellipse cx="150" cy="160" rx="30" ry="20" fill="#555"/>
+  <!-- Text -->
+  <text x="150" y="40" font-family="Arial, sans-serif" font-size="16" fill="#666" text-anchor="middle">LOCATION</text>
+</svg>
