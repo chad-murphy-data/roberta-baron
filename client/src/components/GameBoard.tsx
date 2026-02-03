@@ -80,7 +80,7 @@ interface GameBoardProps {
 export default function GameBoard({ gameState, onSearch, onStartVote, isHost: _isHost }: GameBoardProps) {
   const [showClues, setShowClues] = useState(false)
   const [showEvidenceBoard, setShowEvidenceBoard] = useState(false)
-  const { clueDiscovery } = usePartyKit()
+  const { clueDiscovery, privateClues, shareClue } = usePartyKit()
 
   // Use currentCityClues if available (filtered: suspect clues persist, destination clues only for current city)
   const displayClues = gameState.currentCityClues || gameState.cluesCollected
@@ -126,7 +126,7 @@ export default function GameBoard({ gameState, onSearch, onStartVote, isHost: _i
         <CityImage
           cityName={gameState.currentCompany.city}
           companyName={gameState.currentCompany.name}
-          showOverlay={true}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
         <div className="city-info">
           <h2>{gameState.currentCompany.city}, {gameState.currentCompany.state}</h2>
@@ -177,6 +177,48 @@ export default function GameBoard({ gameState, onSearch, onStartVote, isHost: _i
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
             {clueDiscovery.unsharedCount} clue{clueDiscovery.unsharedCount > 1 ? 's' : ''} waiting to be shared...
           </p>
+        </div>
+      )}
+
+      {/* Host's Own Private Clues - shows when host has unshared clues */}
+      {privateClues.filter(pc => !pc.shared).length > 0 && (
+        <div className="card" style={{
+          marginBottom: '24px',
+          background: 'rgba(239, 68, 68, 0.15)',
+          border: '2px solid var(--accent)'
+        }}>
+          <h3 style={{ color: 'var(--accent)', marginBottom: '16px', textAlign: 'center' }}>
+            🔍 Your Clues to Share
+          </h3>
+          {privateClues.filter(pc => !pc.shared).map(pc => (
+            <div key={pc.clueId} style={{
+              padding: '16px',
+              marginBottom: '12px',
+              background: pc.clue.type === 'destination' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              borderRadius: '8px',
+              border: `1px solid ${pc.clue.type === 'destination' ? 'var(--gold)' : 'var(--accent)'}`
+            }}>
+              <div style={{
+                fontSize: '0.75rem',
+                fontWeight: 'bold',
+                color: pc.clue.type === 'destination' ? 'var(--gold)' : 'var(--accent)',
+                marginBottom: '8px'
+              }}>
+                {pc.clue.type === 'destination' ? '🗺️ DESTINATION CLUE' : '🔍 SUSPECT CLUE'}
+              </div>
+              <p style={{ fontSize: '1.1rem', marginBottom: '12px' }}>"{pc.clue.text}"</p>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '12px', fontStyle: 'italic' }}>
+                Share this with your team verbally, then click below:
+              </p>
+              <button
+                onClick={() => shareClue(pc.clueId)}
+                className="btn btn-primary"
+                style={{ width: '100%' }}
+              >
+                I've Shared This With My Team
+              </button>
+            </div>
+          ))}
         </div>
       )}
 

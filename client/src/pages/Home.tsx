@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePartyKit } from '../context/PartyKitContext'
+import { AssetImage, getRobertaBaronImage } from '../utils/assets'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -39,6 +40,22 @@ export default function Home() {
           <h1 className="pixel-font" style={{ fontSize: '1.5rem', marginBottom: '40px', color: 'var(--gold)' }}>
             All hands on deck
           </h1>
+
+          {/* Roberta Baron portrait */}
+          <div style={{
+            width: '120px',
+            height: '150px',
+            margin: '0 auto 24px',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            border: '3px solid var(--accent)'
+          }}>
+            <AssetImage
+              src={getRobertaBaronImage()}
+              alt="Roberta Baron"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </div>
 
           <div style={{
             background: 'var(--card-bg)',
